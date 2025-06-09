@@ -1,0 +1,101 @@
+
+import { useState } from "react";
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Plus, 
+  Users, 
+  Package,
+  Menu
+} from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+
+const items = [
+  {
+    title: "Tableau de bord",
+    url: "/",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Mes devis",
+    url: "/quotes",
+    icon: FileText,
+  },
+  {
+    title: "Créer un devis",
+    url: "/create-quote",
+    icon: Plus,
+  },
+  {
+    title: "Clients",
+    url: "/clients",
+    icon: Users,
+  },
+  {
+    title: "Produits/Services",
+    url: "/products",
+    icon: Package,
+  },
+];
+
+export function AppSidebar() {
+  const { collapsed } = useSidebar();
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  const isActive = (path: string) => currentPath === path;
+  const getNavCls = ({ isActive }: { isActive: boolean }) =>
+    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50";
+
+  return (
+    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
+      <div className="p-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
+            <span className="text-sidebar-primary-foreground font-bold text-sm">E</span>
+          </div>
+          {!collapsed && (
+            <div>
+              <h2 className="text-lg font-bold text-sidebar-foreground">EasyDevis</h2>
+              <p className="text-xs text-sidebar-foreground/70">Gestion de devis</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavCls}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
