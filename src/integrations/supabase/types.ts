@@ -9,7 +9,233 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          postal_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price: number
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price?: number
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          company_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          phone: string | null
+          siret: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          id: string
+          logo_url?: string | null
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quote_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          product_id: string | null
+          quantity: number
+          quote_id: string
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          product_id?: string | null
+          quantity?: number
+          quote_id: string
+          total?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          product_id?: string | null
+          quantity?: number
+          quote_id?: string
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          client_id: string
+          created_at: string
+          expiry_date: string | null
+          id: string
+          issue_date: string
+          notes: string | null
+          quote_number: string
+          status: Database["public"]["Enums"]["quote_status"]
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          terms: string | null
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string
+          notes?: string | null
+          quote_number: string
+          status?: Database["public"]["Enums"]["quote_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          terms?: string | null
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string
+          notes?: string | null
+          quote_number?: string
+          status?: Database["public"]["Enums"]["quote_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          terms?: string | null
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +244,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      quote_status: "draft" | "sent" | "accepted" | "rejected" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +359,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      quote_status: ["draft", "sent", "accepted", "rejected", "expired"],
+    },
   },
 } as const

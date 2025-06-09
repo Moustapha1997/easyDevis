@@ -21,6 +21,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { UserMenu } from "@/components/UserMenu";
 
 const items = [
   {
@@ -68,9 +69,14 @@ export function AppSidebar() {
             <span className="text-sidebar-primary-foreground font-bold text-sm">E</span>
           </div>
           {!isCollapsed && (
-            <div>
+            <div className="flex-1">
               <h2 className="text-lg font-bold text-sidebar-foreground">EasyDevis</h2>
               <p className="text-xs text-sidebar-foreground/70">Gestion de devis</p>
+            </div>
+          )}
+          {!isCollapsed && (
+            <div className="ml-auto">
+              <UserMenu />
             </div>
           )}
         </div>
@@ -97,6 +103,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {isCollapsed && (
+        <div className="p-2 border-t border-sidebar-border">
+          <UserMenu />
+        </div>
+      )}
     </Sidebar>
   );
 }

@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import QuotesList from "./pages/QuotesList";
@@ -17,41 +19,53 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={
-            <SidebarProvider>
-              <Dashboard />
-            </SidebarProvider>
-          } />
-          <Route path="/quotes" element={
-            <SidebarProvider>
-              <QuotesList />
-            </SidebarProvider>
-          } />
-          <Route path="/create-quote" element={
-            <SidebarProvider>
-              <CreateQuote />
-            </SidebarProvider>
-          } />
-          <Route path="/clients" element={
-            <SidebarProvider>
-              <ClientsManagement />
-            </SidebarProvider>
-          } />
-          <Route path="/products" element={
-            <SidebarProvider>
-              <ProductsManagement />
-            </SidebarProvider>
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <Dashboard />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/quotes" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <QuotesList />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/create-quote" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <CreateQuote />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/clients" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <ClientsManagement />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/products" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <ProductsManagement />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
