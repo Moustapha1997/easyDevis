@@ -8,56 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Package, Plus, Search, Edit, Trash, Euro } from "lucide-react";
-import { toast } from "sonner";
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  unit: string;
-  category: string;
-}
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, Product } from "@/hooks/useProducts";
 
 const ProductsManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: "1",
-      name: "Développement site web",
-      description: "Création d'un site web responsive avec CMS",
-      price: 2500,
-      unit: "forfait",
-      category: "Web"
-    },
-    {
-      id: "2",
-      name: "Logo design",
-      description: "Création d'un logo professionnel avec déclinaisons",
-      price: 450,
-      unit: "forfait",
-      category: "Design"
-    },
-    {
-      id: "3",
-      name: "Maintenance mensuelle",
-      description: "Maintenance et mise à jour du site web",
-      price: 120,
-      unit: "mois",
-      category: "Service"
-    },
-    {
-      id: "4",
-      name: "Formation utilisateur",
-      description: "Formation à l'utilisation du CMS",
-      price: 80,
-      unit: "heure",
-      category: "Formation"
-    },
-  ]);
+  
+  const { data: products = [], isLoading } = useProducts();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+  const deleteProduct = useDeleteProduct();
 
   const [formData, setFormData] = useState<Partial<Product>>({
     name: "",
@@ -78,46 +39,62 @@ const ProductsManagement = () => {
     setEditingProduct(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingProduct) {
-      setProducts(products.map(product => 
-        product.id === editingProduct.id 
-          ? { ...editingProduct, ...formData } as Product
-          : product
-      ));
-      toast.success("Produit modifié avec succès !");
-    } else {
-      const newProduct: Product = {
-        id: Date.now().toString(),
-        ...formData as Product
-      };
-      setProducts([...products, newProduct]);
-      toast.success("Produit ajouté avec succès !");
+    try {
+      if (editingProduct) {
+        await updateProduct.mutateAsync({ 
+          id: editingProduct.id, 
+          ...formData 
+        });
+      } else {
+        await createProduct.mutateAsync(formData as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error submitting product:', error);
     }
-    
-    setIsDialogOpen(false);
-    resetForm();
   };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    setFormData(product);
+    setFormData({
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      unit: product.unit,
+      category: product.category
+    });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setProducts(products.filter(product => product.id !== id));
-    toast.success("Produit supprimé avec succès !");
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProduct.mutateAsync(id);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
   };
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const categories = [...new Set(products.map(p => p.category))];
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Chargement des produits...</div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -161,7 +138,7 @@ const ProductsManagement = () => {
                     <Label htmlFor="name">Nom du produit/service *</Label>
                     <Input
                       id="name"
-                      value={formData.name}
+                      value={formData.name || ""}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
                     />
@@ -171,7 +148,7 @@ const ProductsManagement = () => {
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
-                      value={formData.description}
+                      value={formData.description || ""}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       className="min-h-[80px]"
                     />
@@ -185,7 +162,7 @@ const ProductsManagement = () => {
                         type="number"
                         step="0.01"
                         min="0"
-                        value={formData.price}
+                        value={formData.price || 0}
                         onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
                         required
                       />
@@ -194,7 +171,7 @@ const ProductsManagement = () => {
                       <Label htmlFor="unit">Unité *</Label>
                       <Input
                         id="unit"
-                        value={formData.unit}
+                        value={formData.unit || ""}
                         onChange={(e) => setFormData({...formData, unit: e.target.value})}
                         placeholder="ex: heure, forfait, pièce"
                         required
@@ -206,7 +183,7 @@ const ProductsManagement = () => {
                     <Label htmlFor="category">Catégorie *</Label>
                     <Input
                       id="category"
-                      value={formData.category}
+                      value={formData.category || ""}
                       onChange={(e) => setFormData({...formData, category: e.target.value})}
                       placeholder="ex: Web, Design, Service"
                       required
@@ -218,8 +195,11 @@ const ProductsManagement = () => {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Annuler
                   </Button>
-                  <Button type="submit">
-                    {editingProduct ? "Modifier" : "Ajouter"}
+                  <Button type="submit" disabled={createProduct.isPending || updateProduct.isPending}>
+                    {createProduct.isPending || updateProduct.isPending 
+                      ? "En cours..." 
+                      : (editingProduct ? "Modifier" : "Ajouter")
+                    }
                   </Button>
                 </DialogFooter>
               </form>
@@ -243,26 +223,28 @@ const ProductsManagement = () => {
         </Card>
 
         {/* Categories Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categories.map((category) => {
-            const categoryProducts = products.filter(p => p.category === category);
-            const averagePrice = categoryProducts.reduce((sum, p) => sum + p.price, 0) / categoryProducts.length;
-            
-            return (
-              <Card key={category} className="shadow-card border-0">
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <h3 className="font-semibold">{category}</h3>
-                    <p className="text-2xl font-bold text-primary">{categoryProducts.length}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Prix moyen: {averagePrice.toFixed(0)}€
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        {categories.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {categories.map((category) => {
+              const categoryProducts = products.filter(p => p.category === category);
+              const averagePrice = categoryProducts.reduce((sum, p) => sum + p.price, 0) / categoryProducts.length;
+              
+              return (
+                <Card key={category} className="shadow-card border-0">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <h3 className="font-semibold">{category}</h3>
+                      <p className="text-2xl font-bold text-primary">{categoryProducts.length}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Prix moyen: {averagePrice.toFixed(0)}€
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
@@ -273,9 +255,11 @@ const ProductsManagement = () => {
                   <div className="flex-1">
                     <CardTitle className="text-lg">{product.name}</CardTitle>
                     <CardDescription className="text-sm">
-                      <span className="inline-block px-2 py-1 bg-muted rounded-full text-xs">
-                        {product.category}
-                      </span>
+                      {product.category && (
+                        <span className="inline-block px-2 py-1 bg-muted rounded-full text-xs">
+                          {product.category}
+                        </span>
+                      )}
                     </CardDescription>
                   </div>
                 </div>
@@ -306,6 +290,7 @@ const ProductsManagement = () => {
                     size="sm" 
                     className="text-destructive hover:text-destructive"
                     onClick={() => handleDelete(product.id)}
+                    disabled={deleteProduct.isPending}
                   >
                     <Trash className="w-4 h-4" />
                   </Button>
