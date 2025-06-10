@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Users, Plus, Search, Mail, Phone, MapPin, Edit, Trash, Loader2 } from "lucide-react";
-import { useClients, useCreateClient, Client } from "@/hooks/useClients";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient, Client } from "@/hooks/useClients";
 
 const ClientsManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -16,6 +17,8 @@ const ClientsManagement = () => {
 
   const { data: clients = [], isLoading } = useClients();
   const createClientMutation = useCreateClient();
+  const updateClientMutation = useUpdateClient();
+  const deleteClientMutation = useDeleteClient();
 
   const [formData, setFormData] = useState<Partial<Client>>({
     name: "",
@@ -45,8 +48,10 @@ const ClientsManagement = () => {
     
     try {
       if (editingClient) {
-        // TODO: Implement update functionality
-        console.log("Update functionality to be implemented");
+        await updateClientMutation.mutateAsync({
+          id: editingClient.id,
+          ...formData
+        });
       } else {
         await createClientMutation.mutateAsync(formData as Omit<Client, 'id' | 'created_at' | 'updated_at'>);
       }
@@ -72,9 +77,12 @@ const ClientsManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    // TODO: Implement delete functionality
-    console.log("Delete functionality to be implemented", id);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteClientMutation.mutateAsync(id);
+    } catch (error) {
+      console.error('Error deleting client:', error);
+    }
   };
 
   const filteredClients = clients.filter(client =>
@@ -205,9 +213,9 @@ const ClientsManagement = () => {
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={createClientMutation.isPending}
+                    disabled={createClientMutation.isPending || updateClientMutation.isPending}
                   >
-                    {createClientMutation.isPending ? (
+                    {(createClientMutation.isPending || updateClientMutation.isPending) ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         {editingClient ? "Modification..." : "Ajout..."}
@@ -283,14 +291,42 @@ const ClientsManagement = () => {
                     <Edit className="w-4 h-4 mr-1" />
                     Modifier
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(client.id)}
-                  >
-                    <Trash className="w-4 h-4" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer le client</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Êtes-vous sûr de vouloir supprimer {client.name} ? Cette action est irréversible.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(client.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          disabled={deleteClientMutation.isPending}
+                        >
+                          {deleteClientMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Suppression...
+                            </>
+                          ) : (
+                            "Supprimer"
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>
