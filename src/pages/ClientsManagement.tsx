@@ -6,57 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Search, Mail, Phone, MapPin, Edit, Trash } from "lucide-react";
-import { toast } from "sonner";
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  postalCode: string;
-  siret?: string;
-}
+import { Users, Plus, Search, Mail, Phone, MapPin, Edit, Trash, Loader2 } from "lucide-react";
+import { useClients, useCreateClient, Client } from "@/hooks/useClients";
 
 const ClientsManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  const [clients, setClients] = useState<Client[]>([
-    {
-      id: "1",
-      name: "SARL Dupont",
-      email: "contact@dupont.fr",
-      phone: "01 23 45 67 89",
-      address: "15 Rue des Entrepreneurs",
-      city: "Paris",
-      postalCode: "75010",
-      siret: "123 456 789 00012"
-    },
-    {
-      id: "2",
-      name: "Entreprise Martin",
-      email: "admin@martin.com",
-      phone: "02 34 56 78 90",
-      address: "28 Avenue de la République",
-      city: "Lyon",
-      postalCode: "69002",
-      siret: "987 654 321 00021"
-    },
-    {
-      id: "3",
-      name: "SAS Bernard",
-      email: "info@bernard.fr",
-      phone: "03 45 67 89 01",
-      address: "42 Boulevard Saint-Michel",
-      city: "Marseille",
-      postalCode: "13001",
-      siret: "456 789 123 00034"
-    },
-  ]);
+  const { data: clients = [], isLoading } = useClients();
+  const createClientMutation = useCreateClient();
 
   const [formData, setFormData] = useState<Partial<Client>>({
     name: "",
@@ -64,8 +23,8 @@ const ClientsManagement = () => {
     phone: "",
     address: "",
     city: "",
-    postalCode: "",
-    siret: ""
+    postal_code: "",
+    country: "France"
   });
 
   const resetForm = () => {
@@ -75,50 +34,63 @@ const ClientsManagement = () => {
       phone: "",
       address: "",
       city: "",
-      postalCode: "",
-      siret: ""
+      postal_code: "",
+      country: "France"
     });
     setEditingClient(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingClient) {
-      setClients(clients.map(client => 
-        client.id === editingClient.id 
-          ? { ...editingClient, ...formData } as Client
-          : client
-      ));
-      toast.success("Client modifié avec succès !");
-    } else {
-      const newClient: Client = {
-        id: Date.now().toString(),
-        ...formData as Client
-      };
-      setClients([...clients, newClient]);
-      toast.success("Client ajouté avec succès !");
+    try {
+      if (editingClient) {
+        // TODO: Implement update functionality
+        console.log("Update functionality to be implemented");
+      } else {
+        await createClientMutation.mutateAsync(formData as Omit<Client, 'id' | 'created_at' | 'updated_at'>);
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error saving client:', error);
     }
-    
-    setIsDialogOpen(false);
-    resetForm();
   };
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
-    setFormData(client);
+    setFormData({
+      name: client.name,
+      email: client.email || "",
+      phone: client.phone || "",
+      address: client.address || "",
+      city: client.city || "",
+      postal_code: client.postal_code || "",
+      country: client.country || "France"
+    });
     setIsDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    setClients(clients.filter(client => client.id !== id));
-    toast.success("Client supprimé avec succès !");
+    // TODO: Implement delete functionality
+    console.log("Delete functionality to be implemented", id);
   };
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -170,13 +142,12 @@ const ClientsManagement = () => {
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        required
                       />
                     </div>
                     <div>
@@ -209,21 +180,21 @@ const ClientsManagement = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="postalCode">Code postal</Label>
+                      <Label htmlFor="postal_code">Code postal</Label>
                       <Input
-                        id="postalCode"
-                        value={formData.postalCode}
-                        onChange={(e) => setFormData({...formData, postalCode: e.target.value})}
+                        id="postal_code"
+                        value={formData.postal_code}
+                        onChange={(e) => setFormData({...formData, postal_code: e.target.value})}
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <Label htmlFor="siret">SIRET</Label>
+                    <Label htmlFor="country">Pays</Label>
                     <Input
-                      id="siret"
-                      value={formData.siret}
-                      onChange={(e) => setFormData({...formData, siret: e.target.value})}
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({...formData, country: e.target.value})}
                     />
                   </div>
                 </div>
@@ -232,8 +203,18 @@ const ClientsManagement = () => {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Annuler
                   </Button>
-                  <Button type="submit">
-                    {editingClient ? "Modifier" : "Ajouter"}
+                  <Button 
+                    type="submit" 
+                    disabled={createClientMutation.isPending}
+                  >
+                    {createClientMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {editingClient ? "Modification..." : "Ajout..."}
+                      </>
+                    ) : (
+                      editingClient ? "Modifier" : "Ajouter"
+                    )}
                   </Button>
                 </DialogFooter>
               </form>
@@ -262,16 +243,18 @@ const ClientsManagement = () => {
             <Card key={client.id} className="shadow-card hover:shadow-card-hover transition-all duration-200 border-0">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">{client.name}</CardTitle>
-                {client.siret && (
-                  <CardDescription>SIRET: {client.siret}</CardDescription>
+                {client.country && (
+                  <CardDescription>{client.country}</CardDescription>
                 )}
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span>{client.email}</span>
-                  </div>
+                  {client.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <span>{client.email}</span>
+                    </div>
+                  )}
                   {client.phone && (
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4 text-muted-foreground" />
@@ -281,7 +264,11 @@ const ClientsManagement = () => {
                   {client.address && (
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span>{client.address}, {client.postalCode} {client.city}</span>
+                      <span>
+                        {client.address}
+                        {client.postal_code && `, ${client.postal_code}`}
+                        {client.city && ` ${client.city}`}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -310,7 +297,7 @@ const ClientsManagement = () => {
           ))}
         </div>
 
-        {filteredClients.length === 0 && (
+        {filteredClients.length === 0 && !isLoading && (
           <Card className="shadow-card border-0">
             <CardContent className="text-center py-12">
               <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

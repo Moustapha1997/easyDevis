@@ -66,3 +66,60 @@ export const useCreateClient = () => {
     },
   });
 };
+
+export const useUpdateClient = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...clientData }: Partial<Client> & { id: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      const { data, error } = await supabase
+        .from('clients')
+        .update(clientData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast.success('Client modifié avec succès !');
+    },
+    onError: (error) => {
+      console.error('Error updating client:', error);
+      toast.error('Erreur lors de la modification du client');
+    },
+  });
+};
+
+export const useDeleteClient = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast.success('Client supprimé avec succès !');
+    },
+    onError: (error) => {
+      console.error('Error deleting client:', error);
+      toast.error('Erreur lors de la suppression du client');
+    },
+  });
+};
