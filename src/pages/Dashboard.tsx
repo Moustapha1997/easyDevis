@@ -2,66 +2,104 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, TrendingUp, Euro, Users, Plus, Eye } from "lucide-react";
+import { FileText, TrendingUp, Euro, Users, Plus, Eye, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuotes } from "@/hooks/useQuotes";
+import { useClients } from "@/hooks/useClients";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { data: quotes, isLoading: quotesLoading } = useQuotes();
+  const { data: clients, isLoading: clientsLoading } = useClients();
+
+  // Calculate stats from real data
+  const totalQuotes = quotes?.length || 0;
+  const acceptedQuotes = quotes?.filter(q => q.status === 'accepted').length || 0;
+  const acceptanceRate = totalQuotes > 0 ? Math.round((acceptedQuotes / totalQuotes) * 100) : 0;
+  const totalRevenue = quotes?.filter(q => q.status === 'accepted').reduce((sum, q) => sum + q.total, 0) || 0;
+  const activeClients = clients?.length || 0;
 
   const stats = [
     {
       title: "Total des devis",
-      value: "156",
-      description: "+12% ce mois",
+      value: totalQuotes.toString(),
+      description: `${totalQuotes} devis créés`,
       icon: FileText,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
       title: "Taux d'acceptation",
-      value: "68%",
-      description: "+5% ce mois",
+      value: `${acceptanceRate}%`,
+      description: `${acceptedQuotes} devis acceptés`,
       icon: TrendingUp,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: "Revenus estimés",
-      value: "42 850€",
-      description: "+18% ce mois",
+      value: `${totalRevenue.toLocaleString()}€`,
+      description: "Devis acceptés",
       icon: Euro,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
     {
       title: "Clients actifs",
-      value: "89",
-      description: "+7 nouveaux",
+      value: activeClients.toString(),
+      description: `${activeClients} clients`,
       icon: Users,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
   ];
 
-  const recentQuotes = [
-    { id: 1, client: "SARL Dupont", amount: "2 850€", status: "En attente", date: "15/03/2024" },
-    { id: 2, client: "Entreprise Martin", amount: "5 200€", status: "Accepté", date: "14/03/2024" },
-    { id: 3, client: "SAS Bernard", amount: "1 650€", status: "Refusé", date: "13/03/2024" },
-    { id: 4, client: "EURL Petit", amount: "3 100€", status: "En attente", date: "12/03/2024" },
-  ];
+  // Get recent quotes (last 4)
+  const recentQuotes = quotes?.slice(0, 4) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Accepté":
+      case "accepted":
         return "bg-accent/10 text-accent border-accent/20";
-      case "En attente":
+      case "sent":
         return "bg-yellow-50 text-yellow-700 border-yellow-200";
-      case "Refusé":
+      case "rejected":
         return "bg-red-50 text-red-700 border-red-200";
+      case "draft":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "expired":
+        return "bg-gray-50 text-gray-700 border-gray-200";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "accepted":
+        return "Accepté";
+      case "sent":
+        return "Envoyé";
+      case "rejected":
+        return "Refusé";
+      case "draft":
+        return "Brouillon";
+      case "expired":
+        return "Expiré";
+      default:
+        return status;
+    }
+  };
+
+  if (quotesLoading || clientsLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader className="w-8 h-8 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -116,20 +154,28 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recentQuotes.map((quote) => (
-                  <div key={quote.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium">{quote.client}</p>
-                      <p className="text-sm text-muted-foreground">{quote.date}</p>
+                {recentQuotes.length > 0 ? (
+                  recentQuotes.map((quote) => (
+                    <div key={quote.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{quote.clients?.name || 'Client inconnu'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(quote.issue_date).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="font-semibold">{quote.total.toLocaleString()}€</p>
+                        <span className={`inline-block px-2 py-1 text-xs rounded-full border ${getStatusColor(quote.status)}`}>
+                          {getStatusLabel(quote.status)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right space-y-1">
-                      <p className="font-semibold">{quote.amount}</p>
-                      <span className={`inline-block px-2 py-1 text-xs rounded-full border ${getStatusColor(quote.status)}`}>
-                        {quote.status}
-                      </span>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Aucun devis créé pour le moment</p>
                   </div>
-                ))}
+                )}
               </div>
               <Button 
                 variant="outline" 

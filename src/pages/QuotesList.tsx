@@ -6,42 +6,80 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Search, Filter, Plus, Eye, Mail, Trash } from "lucide-react";
+import { FileText, Search, Filter, Plus, Eye, Mail, Trash, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuotes } from "@/hooks/useQuotes";
 
 const QuotesList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  const quotes = [
-    { id: "DEV-001", client: "SARL Dupont", amount: 2850, status: "En attente", date: "15/03/2024", email: "contact@dupont.fr" },
-    { id: "DEV-002", client: "Entreprise Martin", amount: 5200, status: "Accepté", date: "14/03/2024", email: "admin@martin.com" },
-    { id: "DEV-003", client: "SAS Bernard", amount: 1650, status: "Refusé", date: "13/03/2024", email: "info@bernard.fr" },
-    { id: "DEV-004", client: "EURL Petit", amount: 3100, status: "En attente", date: "12/03/2024", email: "contact@petit.com" },
-    { id: "DEV-005", client: "SA Moreau", amount: 7500, status: "Accepté", date: "11/03/2024", email: "direction@moreau.fr" },
-    { id: "DEV-006", client: "SARL Rousseau", amount: 2200, status: "En attente", date: "10/03/2024", email: "contact@rousseau.com" },
-  ];
+  
+  const { data: quotes, isLoading, error } = useQuotes();
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Accepté":
+      case "accepted":
         return "bg-accent text-accent-foreground";
-      case "En attente":
+      case "sent":
         return "bg-yellow-100 text-yellow-800";
-      case "Refusé":
+      case "rejected":
         return "bg-red-100 text-red-800";
+      case "draft":
+        return "bg-blue-100 text-blue-800";
+      case "expired":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
 
-  const filteredQuotes = quotes.filter(quote => {
-    const matchesSearch = quote.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "accepted":
+        return "Accepté";
+      case "sent":
+        return "Envoyé";
+      case "rejected":
+        return "Refusé";
+      case "draft":
+        return "Brouillon";
+      case "expired":
+        return "Expiré";
+      default:
+        return status;
+    }
+  };
+
+  const filteredQuotes = quotes?.filter(quote => {
+    const matchesSearch = quote.clients?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || quote.status === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }) || [];
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader className="w-8 h-8 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium mb-2">Erreur de chargement</h3>
+          <p className="text-muted-foreground">
+            Impossible de charger les devis. Veuillez réessayer.
+          </p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -86,9 +124,11 @@ const QuotesList = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="En attente">En attente</SelectItem>
-                  <SelectItem value="Accepté">Accepté</SelectItem>
-                  <SelectItem value="Refusé">Refusé</SelectItem>
+                  <SelectItem value="draft">Brouillon</SelectItem>
+                  <SelectItem value="sent">Envoyé</SelectItem>
+                  <SelectItem value="accepted">Accepté</SelectItem>
+                  <SelectItem value="rejected">Refusé</SelectItem>
+                  <SelectItem value="expired">Expiré</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -102,22 +142,22 @@ const QuotesList = () => {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">{quote.id}</CardTitle>
-                    <CardDescription className="font-medium">{quote.client}</CardDescription>
+                    <CardTitle className="text-lg">{quote.quote_number}</CardTitle>
+                    <CardDescription className="font-medium">{quote.clients?.name}</CardDescription>
                   </div>
                   <Badge className={getStatusColor(quote.status)}>
-                    {quote.status}
+                    {getStatusLabel(quote.status)}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Montant:</span>
-                  <span className="text-xl font-bold">{quote.amount.toLocaleString()}€</span>
+                  <span className="text-xl font-bold">{quote.total.toLocaleString()}€</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Date:</span>
-                  <span>{quote.date}</span>
+                  <span>{new Date(quote.issue_date).toLocaleDateString('fr-FR')}</span>
                 </div>
                 
                 <div className="flex gap-2 pt-2">
@@ -138,13 +178,16 @@ const QuotesList = () => {
           ))}
         </div>
 
-        {filteredQuotes.length === 0 && (
+        {filteredQuotes.length === 0 && !isLoading && (
           <Card className="shadow-card border-0">
             <CardContent className="text-center py-12">
               <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">Aucun devis trouvé</h3>
               <p className="text-muted-foreground mb-4">
-                Aucun devis ne correspond à vos critères de recherche.
+                {quotes?.length === 0 
+                  ? "Vous n'avez pas encore créé de devis."
+                  : "Aucun devis ne correspond à vos critères de recherche."
+                }
               </p>
               <Button onClick={() => navigate("/create-quote")}>
                 <Plus className="w-4 h-4 mr-2" />

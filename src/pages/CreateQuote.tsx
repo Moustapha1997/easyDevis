@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash, FileText, Save, Mail, Download } from "lucide-react";
+import { Plus, Trash, FileText, Save, Mail, Download, Loader } from "lucide-react";
 import { toast } from "sonner";
+import { useClients } from "@/hooks/useClients";
+import { useProducts } from "@/hooks/useProducts";
 
 interface QuoteItem {
   id: string;
@@ -21,9 +23,13 @@ interface QuoteItem {
 
 const CreateQuote = () => {
   const [client, setClient] = useState("");
+  const [notes, setNotes] = useState("");
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([
     { id: "1", description: "", quantity: 1, unitPrice: 0, total: 0 }
   ]);
+
+  const { data: clients, isLoading: clientsLoading } = useClients();
+  const { data: products, isLoading: productsLoading } = useProducts();
 
   const addNewItem = () => {
     const newItem: QuoteItem = {
@@ -55,6 +61,20 @@ const CreateQuote = () => {
     }));
   };
 
+  const addProductToQuote = (productId: string) => {
+    const product = products?.find(p => p.id === productId);
+    if (product) {
+      const newItem: QuoteItem = {
+        id: Date.now().toString(),
+        description: product.description || "",
+        quantity: 1,
+        unitPrice: product.price,
+        total: product.price
+      };
+      setQuoteItems([...quoteItems, newItem]);
+    }
+  };
+
   const subtotal = quoteItems.reduce((sum, item) => sum + item.total, 0);
   const vatRate = 0.20;
   const vatAmount = subtotal * vatRate;
@@ -71,6 +91,16 @@ const CreateQuote = () => {
   const handleGeneratePDF = () => {
     toast.success("PDF généré avec succès !");
   };
+
+  if (clientsLoading || productsLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader className="w-8 h-8 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -98,7 +128,7 @@ const CreateQuote = () => {
             <Card className="shadow-card border-0">
               <CardHeader>
                 <CardTitle>Informations client</CardTitle>
-                <CardDescription>Sélectionnez ou créez un nouveau client</CardDescription>
+                <CardDescription>Sélectionnez un client existant</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -109,10 +139,16 @@ const CreateQuote = () => {
                         <SelectValue placeholder="Sélectionner un client" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sarl-dupont">SARL Dupont</SelectItem>
-                        <SelectItem value="entreprise-martin">Entreprise Martin</SelectItem>
-                        <SelectItem value="sas-bernard">SAS Bernard</SelectItem>
-                        <SelectItem value="nouveau">+ Nouveau client</SelectItem>
+                        {clients?.map((clientItem) => (
+                          <SelectItem key={clientItem.id} value={clientItem.id}>
+                            {clientItem.name}
+                          </SelectItem>
+                        ))}
+                        {clients?.length === 0 && (
+                          <SelectItem value="no-clients" disabled>
+                            Aucun client disponible
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -123,6 +159,30 @@ const CreateQuote = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Products Quick Add */}
+            {products && products.length > 0 && (
+              <Card className="shadow-card border-0">
+                <CardHeader>
+                  <CardTitle>Ajouter des produits</CardTitle>
+                  <CardDescription>Sélectionnez des produits de votre catalogue</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Select onValueChange={addProductToQuote}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir un produit à ajouter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} - {product.price}€
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Quote Items */}
             <Card className="shadow-card border-0">
@@ -202,6 +262,8 @@ const CreateQuote = () => {
                     id="notes"
                     placeholder="Conditions de paiement, délais de livraison, etc."
                     className="min-h-[100px]"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                   />
                 </div>
               </CardContent>
