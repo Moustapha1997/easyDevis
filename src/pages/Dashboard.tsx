@@ -2,15 +2,17 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, TrendingUp, Euro, Users, Plus, Eye, Loader } from "lucide-react";
+import { FileText, TrendingUp, Euro, Users, Plus, Eye, Loader, Settings, User, HelpCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useClients } from "@/hooks/useClients";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { data: quotes, isLoading: quotesLoading } = useQuotes();
   const { data: clients, isLoading: clientsLoading } = useClients();
+  const { user } = useAuth();
 
   // Calculate stats from real data
   const totalQuotes = quotes?.length || 0;
@@ -101,13 +103,17 @@ const Dashboard = () => {
     );
   }
 
+  // Le return principal doit être dans le même bloc de fonction
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
+        {/* Message de bienvenue */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold">Tableau de bord</h1>
-            <p className="text-muted-foreground">Bienvenue sur EasyDevis, voici un aperçu de votre activité</p>
+            <p className="text-muted-foreground">
+              Bienvenue{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : user?.email ? `, ${user.email}` : ''} ! Voici un aperçu de votre activité.
+            </p>
           </div>
           <Button 
             onClick={() => navigate("/create-quote")}
@@ -119,28 +125,141 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="shadow-card hover:shadow-card-hover transition-all duration-200 border-0">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat, idx) => (
+            <Card key={idx} className={`shadow-card border-0 ${stat.bgColor}`}>
+              <CardHeader>
+                <CardTitle className={`flex items-center gap-2 ${stat.color}`}>
+                  <stat.icon className="w-5 h-5" /> {stat.title}
                 </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
+                <CardDescription>{stat.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
-                </p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Recent Quotes */}
+        {/* Activité récente */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Devis modifiés */}
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" /> Derniers devis modifiés
+              </CardTitle>
+              <CardDescription>Vos derniers devis créés ou modifiés</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {quotes && quotes.length > 0 ? (
+                  quotes.slice(0, 3).map((quote) => {
+                    return (
+                      <div key={quote.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">{quote.clients?.name || 'Client inconnu'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(quote.updated_at || quote.issue_date).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                        <div className="text-right space-y-1">
+                          <p className="font-semibold">{quote.total.toLocaleString()}€</p>
+                          <span className={`inline-block px-2 py-1 text-xs rounded-full border ${getStatusColor(quote.status)}`}>
+                            {getStatusLabel(quote.status)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Aucun devis</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          {/* Nouveaux clients */}
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" /> Nouveaux clients
+              </CardTitle>
+              <CardDescription>Derniers clients ajoutés</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {clients && clients.length > 0 ? (
+                  clients.slice(0, 3).map((client) => {
+                    return (
+                      <div key={client.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <div>
+                          <p className="font-medium">{client.name}</p>
+                          <p className="text-sm text-muted-foreground">{client.email || '—'}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Aucun client</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Alertes & Raccourcis */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Bloc Alertes */}
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-5 h-5" /> Alertes
+              </CardTitle>
+              <CardDescription>Points à surveiller</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-yellow-700">
+                  {quotes?.filter(q => q.status === 'sent').length || 0}
+                </span>
+                <span>devis à relancer</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-red-700">
+                  {quotes?.filter(q => q.status === 'expired').length || 0}
+                </span>
+                <span>devis expirés</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bloc Raccourcis */}
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" /> Raccourcis
+              </CardTitle>
+              <CardDescription>Accès rapide aux paramètres</CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-4 flex-wrap">
+              <Button variant="outline" onClick={() => navigate('/profile')} className="flex-1 min-w-[120px]">
+                <User className="w-4 h-4 mr-2" /> Profil
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/settings')} className="flex-1 min-w-[120px]">
+                <Settings className="w-4 h-4 mr-2" /> Paramètres
+              </Button>
+              <Button variant="outline" onClick={() => window.open('https://easydevis-docs.example.com', '_blank')} className="flex-1 min-w-[120px]">
+                <HelpCircle className="w-4 h-4 mr-2" /> Aide
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="shadow-card border-0">
             <CardHeader>

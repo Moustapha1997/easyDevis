@@ -15,6 +15,9 @@ import CreateQuote from "./pages/CreateQuote";
 import ClientsManagement from "./pages/ClientsManagement";
 import ProductsManagement from "./pages/ProductsManagement";
 import NotFound from "./pages/NotFound";
+import QuoteDetail from "./pages/QuoteDetail";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +44,13 @@ const App = () => (
                 </SidebarProvider>
               </ProtectedRoute>
             } />
+            <Route path="/quotes/:id" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <QuoteDetail />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
             <Route path="/create-quote" element={
               <ProtectedRoute>
                 <SidebarProvider>
@@ -59,6 +69,20 @@ const App = () => (
               <ProtectedRoute>
                 <SidebarProvider>
                   <ProductsManagement />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <Profile />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <Settings />
                 </SidebarProvider>
               </ProtectedRoute>
             } />

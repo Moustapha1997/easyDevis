@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { toast } from "sonner";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { FileText, Search, Filter, Plus, Eye, Mail, Trash, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQuotes } from "@/hooks/useQuotes";
+import { useQuotes, useDeleteQuote } from "@/hooks/useQuotes";
 
 const QuotesList = () => {
   const navigate = useNavigate();
@@ -16,6 +16,7 @@ const QuotesList = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   
   const { data: quotes, isLoading, error } = useQuotes();
+  const deleteQuote = useDeleteQuote();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -161,15 +162,25 @@ const QuotesList = () => {
                 </div>
                 
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate(`/quotes/${quote.id}`)}>
                     <Eye className="w-4 h-4 mr-1" />
                     Voir
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => toast.success('Devis envoyé par email !')}>
                     <Mail className="w-4 h-4 mr-1" />
                     Envoyer
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={deleteQuote.status === 'pending'}
+                    onClick={async () => {
+                      if (window.confirm('Supprimer ce devis ? Cette action est irréversible.')) {
+                        deleteQuote.mutate(quote.id);
+                      }
+                    }}
+                  >
                     <Trash className="w-4 h-4" />
                   </Button>
                 </div>

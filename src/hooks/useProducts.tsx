@@ -11,6 +11,7 @@ export interface Product {
   price: number;
   unit: string;
   category: string | null;
+  is_template?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -26,11 +27,12 @@ export const useProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},is_template.eq.true`)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Product[];
+      // Ajout d'une sécurité pour is_template (pour compatibilité)
+      return (data as Product[]).map(p => ({ ...p, is_template: !!p.is_template }));
     },
     enabled: !!user,
   });

@@ -33,7 +33,8 @@ export const useQuotes = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
-      const { data, error } = await supabase
+      // Fetch quotes with clients
+      const { data: quotes, error } = await supabase
         .from('quotes')
         .select(`
           *,
@@ -44,11 +45,47 @@ export const useQuotes = () => {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
-      return data as Quote[];
+      if (!quotes) return [];
+
+      // Fetch all quote_items for these quotes
+      const quoteIds = quotes.map((q: any) => q.id);
+      let items: any[] = [];
+      if (quoteIds.length > 0) {
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('quote_items')
+          .select('*')
+          .in('quote_id', quoteIds);
+        if (itemsError) throw itemsError;
+        items = itemsData || [];
+      }
+      // Attach items to each quote
+      const quotesWithItems = quotes.map((q: any) => ({
+        ...q,
+        items: items.filter((item: any) => item.quote_id === q.id)
+      }));
+      return quotesWithItems as Quote[];
     },
     enabled: !!user,
+  });
+};
+
+export const useDeleteQuote = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (quoteId: string) => {
+      const { error } = await supabase.from('quotes').delete().eq('id', quoteId);
+      if (error) throw error;
+      return quoteId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      toast.success('Devis supprimé avec succès !');
+    },
+    onError: (error) => {
+      console.error('Erreur suppression devis:', error);
+      toast.error('Erreur lors de la suppression du devis');
+    },
   });
 };
 
