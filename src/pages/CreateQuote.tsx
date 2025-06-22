@@ -373,6 +373,12 @@ const CreateQuote = () => {
         doc.addPage();
         y = 20;
       }
+      // Avant la signature, s'assurer qu'il reste au moins 40px avant le pied de page
+      const footerY = doc.internal.pageSize.getHeight() - 18;
+      if (y + 40 > footerY) {
+        doc.addPage();
+        y = 30;
+      }
       // Section signature (alignée à droite)
       y += 20;
       doc.setDrawColor(150);
@@ -385,17 +391,25 @@ const CreateQuote = () => {
       doc.setFontSize(10);
       doc.text("Nom, fonction et signature du représentant", 190, y, { align: "right" });
 
-      // Pied de page personnalisé sur chaque page
-      if (company.footer) {
-        const pageCount = doc.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-          doc.setPage(i);
-          doc.setFontSize(9);
-          const footerLines = doc.splitTextToSize(company.footer, 180);
-footerLines.forEach((line, idx) => {
-  doc.text(line, 105, 285 + idx * 5, { align: "center" });
-});
+      // Pied de page personnalisé + pagination sur chaque page (toujours affiché)
+      const pageCount = (doc as any).getNumberOfPages ? (doc as any).getNumberOfPages() : 1;
+      const footer = company.footer || '';
+      const footerLines = doc.splitTextToSize(footer, 180);
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        let footerY = doc.internal.pageSize.getHeight() - 18;
+        if (footerLines.length > 1) {
+          footerY -= (footerLines.length - 1) * 5;
         }
+        doc.setTextColor(120, 120, 120);
+        doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
+        doc.setTextColor(0,0,0);
+        // Pagination centrée
+        doc.setFontSize(8);
+        doc.setTextColor(180,180,180);
+        doc.text(`Page ${i} / ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
+        doc.setTextColor(0,0,0);
       }
 
       doc.save("devis.pdf");
