@@ -62,15 +62,15 @@ const Dashboard = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "accepted":
-        return "bg-accent/10 text-accent border-accent/20";
+        return "bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full text-xs font-semibold";
       case "sent":
-        return "bg-yellow-50 text-yellow-700 border-yellow-200";
+        return "bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-semibold";
       case "rejected":
-        return "bg-red-50 text-red-700 border-red-200";
+        return "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-semibold";
       case "draft":
-        return "bg-blue-50 text-blue-700 border-blue-200";
+        return "bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-semibold";
       case "expired":
-        return "bg-gray-50 text-gray-700 border-gray-200";
+        return "bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-semibold";
       default:
         return "bg-muted text-muted-foreground";
     }
@@ -106,18 +106,18 @@ const Dashboard = () => {
   // Le return principal doit être dans le même bloc de fonction
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="max-w-7xl mx-auto py-8 animate-fade-in bg-gray-50">
         {/* Message de bienvenue */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold">Tableau de bord</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-indigo-600">Tableau de bord</h1>
             <p className="text-muted-foreground">
               Bienvenue{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : user?.email ? `, ${user.email}` : ''} ! Voici un aperçu de votre activité.
             </p>
           </div>
           <Button 
             onClick={() => navigate("/create-quote")}
-            className="gradient-primary border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+            className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-md"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nouveau devis
@@ -127,15 +127,15 @@ const Dashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, idx) => (
-            <Card key={idx} className={`shadow-card border-0 ${stat.bgColor}`}>
+            <Card key={idx} className={`shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl`}>
               <CardHeader>
-                <CardTitle className={`flex items-center gap-2 ${stat.color}`}>
+                <CardTitle className={`flex items-center gap-2 text-indigo-600 font-bold`}>
                   <stat.icon className="w-5 h-5" /> {stat.title}
                 </CardTitle>
                 <CardDescription>{stat.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
+                <div className="text-4xl font-bold text-indigo-600">{stat.value}</div>
               </CardContent>
             </Card>
           ))}
@@ -144,9 +144,9 @@ const Dashboard = () => {
         {/* Activité récente */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Devis modifiés */}
-          <Card className="shadow-card border-0">
+          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
                 <FileText className="w-5 h-5" /> Derniers devis modifiés
               </CardTitle>
               <CardDescription>Vos derniers devis créés ou modifiés</CardDescription>
@@ -159,7 +159,7 @@ const Dashboard = () => {
                       <div key={quote.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
                         <div className="flex-1">
                           <p className="font-medium">{quote.clients?.name || 'Client inconnu'}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xl text-cyan-700">
                             {new Date(quote.updated_at || quote.issue_date).toLocaleDateString('fr-FR')}
                           </p>
                         </div>
@@ -181,9 +181,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           {/* Nouveaux clients */}
-          <Card className="shadow-card border-0">
+          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
                 <Users className="w-5 h-5" /> Nouveaux clients
               </CardTitle>
               <CardDescription>Derniers clients ajoutés</CardDescription>
@@ -196,7 +196,7 @@ const Dashboard = () => {
                       <div key={client.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
                         <div>
                           <p className="font-medium">{client.name}</p>
-                          <p className="text-sm text-muted-foreground">{client.email || '—'}</p>
+                          <p className="text-xl text-cyan-700">{client.email || '—'}</p>
                         </div>
                       </div>
                     );
@@ -214,22 +214,22 @@ const Dashboard = () => {
         {/* Alertes & Raccourcis */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Bloc Alertes */}
-          <Card className="shadow-card border-0">
+          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-600">
+              <CardTitle className="flex items-center gap-2 text-red-500 font-bold">
                 <AlertCircle className="w-5 h-5" /> Alertes
               </CardTitle>
               <CardDescription>Points à surveiller</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-yellow-700">
+              <div className="flex items-center gap-2 text-indigo-600 font-bold">
+                <span className="font-bold text-2xl text-indigo-600">
                   {quotes?.filter(q => q.status === 'sent').length || 0}
                 </span>
                 <span>devis à relancer</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-red-700">
+              <div className="flex items-center gap-2 text-indigo-600 font-bold">
+                <span className="font-bold text-2xl text-indigo-600">
                   {quotes?.filter(q => q.status === 'expired').length || 0}
                 </span>
                 <span>devis expirés</span>
@@ -238,21 +238,33 @@ const Dashboard = () => {
           </Card>
 
           {/* Bloc Raccourcis */}
-          <Card className="shadow-card border-0">
+          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
                 <Settings className="w-5 h-5" /> Raccourcis
               </CardTitle>
               <CardDescription>Accès rapide aux paramètres</CardDescription>
             </CardHeader>
             <CardContent className="flex gap-4 flex-wrap">
-              <Button variant="outline" onClick={() => navigate('/profile')} className="flex-1 min-w-[120px]">
+              <Button 
+                onClick={() => navigate('/profile')}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
+                variant="outline"
+              >
                 <User className="w-4 h-4 mr-2" /> Profil
               </Button>
-              <Button variant="outline" onClick={() => navigate('/settings')} className="flex-1 min-w-[120px]">
+              <Button 
+                onClick={() => navigate('/settings')}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
+                variant="outline"
+              >
                 <Settings className="w-4 h-4 mr-2" /> Paramètres
               </Button>
-              <Button variant="outline" onClick={() => window.open('https://easydevis-docs.example.com', '_blank')} className="flex-1 min-w-[120px]">
+              <Button 
+                onClick={() => window.open('https://easydevis-docs.example.com', '_blank')}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
+                variant="outline"
+              >
                 <HelpCircle className="w-4 h-4 mr-2" /> Aide
               </Button>
             </CardContent>
@@ -261,9 +273,9 @@ const Dashboard = () => {
 
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-card border-0">
+          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
                 <FileText className="w-5 h-5" />
                 Devis récents
               </CardTitle>
@@ -278,7 +290,7 @@ const Dashboard = () => {
                     <div key={quote.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                       <div className="flex-1">
                         <p className="font-medium">{quote.clients?.name || 'Client inconnu'}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xl text-cyan-700">
                           {new Date(quote.issue_date).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
@@ -298,7 +310,7 @@ const Dashboard = () => {
               </div>
               <Button 
                 variant="outline" 
-                className="w-full mt-4"
+                className="w-full mt-4 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
                 onClick={() => navigate("/quotes")}
               >
                 <Eye className="w-4 h-4 mr-2" />
@@ -308,7 +320,7 @@ const Dashboard = () => {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="shadow-card border-0">
+          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
             <CardHeader>
               <CardTitle>Actions rapides</CardTitle>
               <CardDescription>
@@ -318,37 +330,36 @@ const Dashboard = () => {
             <CardContent className="space-y-3">
               <Button 
                 onClick={() => navigate("/create-quote")}
-                className="w-full justify-start h-12 text-left"
-                variant="outline"
+                className="w-full justify-start h-12 text-left bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-md"
               >
                 <Plus className="w-5 h-5 mr-3" />
                 <div>
                   <div className="font-medium">Créer un nouveau devis</div>
-                  <div className="text-sm text-muted-foreground">Démarrer un nouveau devis</div>
+                  <div className="text-xl text-cyan-700">Démarrer un nouveau devis</div>
                 </div>
               </Button>
               
               <Button 
                 onClick={() => navigate("/clients")}
-                className="w-full justify-start h-12 text-left"
+                className="w-full justify-start h-12 text-left bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
                 variant="outline"
               >
                 <Users className="w-5 h-5 mr-3" />
                 <div>
                   <div className="font-medium">Gérer les clients</div>
-                  <div className="text-sm text-muted-foreground">Ajouter ou modifier des clients</div>
+                  <div className="text-xl text-cyan-700">Ajouter ou modifier des clients</div>
                 </div>
               </Button>
               
               <Button 
                 onClick={() => navigate("/products")}
-                className="w-full justify-start h-12 text-left"
+                className="w-full justify-start h-12 text-left bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
                 variant="outline"
               >
                 <FileText className="w-5 h-5 mr-3" />
                 <div>
                   <div className="font-medium">Gérer les produits</div>
-                  <div className="text-sm text-muted-foreground">Ajouter ou modifier des produits</div>
+                  <div className="text-xl text-cyan-700">Ajouter ou modifier des produits</div>
                 </div>
               </Button>
             </CardContent>

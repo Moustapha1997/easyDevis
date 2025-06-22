@@ -417,18 +417,22 @@ footerLines.forEach((line, idx) => {
 
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in bg-gray-50">
         {/* En-tête de page */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2">
-              <Plus className="w-7 h-7" />
+            <h1 className="text-2xl lg:text-3xl font-bold mb-4 flex items-center gap-2 text-indigo-600">
+              <FileText className="w-7 h-7 text-indigo-500" />
               Créer un devis
             </h1>
-            <p className="text-muted-foreground">Créez un nouveau devis personnalisé</p>
+            <p className="text-sm text-cyan-700">Créez un nouveau devis personnalisé</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-md font-semibold px-6 py-2 text-base"
+            >
               {isSaving ? <Loader className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Sauvegarder
             </Button>
@@ -449,9 +453,9 @@ footerLines.forEach((line, idx) => {
           {/* Colonne principale - Formulaire */}
           <div className="lg:col-span-2 space-y-6">
             {/* Informations entreprise */}
-            <Card className="shadow-card border-0">
+            <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
               <CardHeader>
-                <CardTitle>Informations entreprise</CardTitle>
+                <CardTitle className="text-indigo-600 font-bold">Informations entreprise</CardTitle>
                 <CardDescription>Ces informations apparaîtront sur l'entête du devis</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -499,9 +503,9 @@ footerLines.forEach((line, idx) => {
             </Card>
 
             {/* Informations de base */}
-            <Card className="shadow-card border-0">
+            <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
               <CardHeader>
-                <CardTitle>Informations de base</CardTitle>
+                <CardTitle className="text-indigo-600 font-bold">Informations de base</CardTitle>
                 <CardDescription>Sélectionnez un client existant</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -536,9 +540,9 @@ footerLines.forEach((line, idx) => {
 
             {/* Products Quick Add */}
             {products && products.length > 0 && (
-              <Card className="shadow-card border-0">
+              <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
                 <CardHeader>
-                  <CardTitle>Ajouter des produits</CardTitle>
+                  <CardTitle className="text-indigo-600 font-bold">Ajouter des produits</CardTitle>
                   <CardDescription>Sélectionnez des produits de votre catalogue</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -559,9 +563,9 @@ footerLines.forEach((line, idx) => {
             )}
 
             {/* Quote Items */}
-            <Card className="shadow-card border-0">
+            <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
               <CardHeader>
-                <CardTitle>Éléments du devis</CardTitle>
+                <CardTitle className="text-indigo-600 font-bold">Éléments du devis</CardTitle>
                 <CardDescription>Ajoutez les produits ou services à facturer</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -609,7 +613,7 @@ footerLines.forEach((line, idx) => {
                         size="sm"
                         onClick={() => removeItem(item.id)}
                         disabled={quoteItems.length === 1}
-                        className="text-destructive hover:text-destructive"
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-full shadow font-semibold px-3 py-1 text-xs"
                       >
                         <Trash className="w-4 h-4" />
                       </Button>
@@ -625,9 +629,9 @@ footerLines.forEach((line, idx) => {
             </Card>
 
             {/* Additional Information */}
-            <Card className="shadow-card border-0">
+            <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
               <CardHeader>
-                <CardTitle>Informations complémentaires</CardTitle>
+                <CardTitle className="text-indigo-600 font-bold">Informations complémentaires</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -675,9 +679,9 @@ footerLines.forEach((line, idx) => {
 
           {/* Colonne de droite - Aperçu */}
           <div className="space-y-6">
-            <Card className="shadow-card border-0 sticky top-6">
+            <Card className="shadow-card border-0 sticky top-6 bg-white border border-gray-200 shadow-md rounded-xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
                   <FileText className="w-5 h-5" />
                   Aperçu du devis
                 </CardTitle>
@@ -692,11 +696,11 @@ footerLines.forEach((line, idx) => {
                       <div className="w-20 h-20 flex items-center justify-center border rounded bg-muted text-muted-foreground">Logo</div>
                     )}
                     <div className="flex-1">
-                      <div className="font-bold text-lg">{company.name || <span className="italic text-muted-foreground">Nom de l'entreprise</span>}</div>
-                      <div>{company.address || <span className="italic text-muted-foreground">Adresse</span>}</div>
-                      <div>{company.siret ? <>SIRET : {company.siret}</> : <span className="italic text-muted-foreground">SIRET</span>}</div>
-                      <div>{company.email ? <>Email : {company.email}</> : <span className="italic text-muted-foreground">Email</span>}</div>
-                      <div>{company.phone ? <>Tél : {company.phone}</> : <span className="italic text-muted-foreground">Téléphone</span>}</div>
+                      <div className="font-bold text-lg">{company.name || <span className="italic text-cyan-400">Nom de l'entreprise</span>}</div>
+                      <div>{company.address || <span className="italic text-cyan-400">Adresse</span>}</div>
+                      <div>{company.siret ? <>SIRET : {company.siret}</> : <span className="italic text-cyan-400">SIRET</span>}</div>
+                      <div>{company.email ? <>Email : {company.email}</> : <span className="italic text-cyan-400">Email</span>}</div>
+                      <div>{company.phone ? <>Tél : {company.phone}</> : <span className="italic text-cyan-400">Téléphone</span>}</div>
                     </div>
                   </div>
                   <div className="flex justify-between mt-4">
@@ -705,41 +709,65 @@ footerLines.forEach((line, idx) => {
                     </div>
                     <div>
                       <div className="font-semibold">Client :</div>
-                      {clients?.find(c => c.id === client)?.name || <span className="italic text-muted-foreground">Non sélectionné</span>}
+                      {clients?.find(c => c.id === client)?.name || <span className="italic text-cyan-400">Non sélectionné</span>}
                     </div>
                   </div>
                 </div>
 
-                {/* TABLEAU DES LIGNES DEVIS */}
-                <div className="overflow-x-auto mb-4">
-                  <table className="min-w-full border text-sm">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="border px-2 py-1 text-left">Description</th>
-                        <th className="border px-2 py-1 text-right">Quantité</th>
-                        <th className="border px-2 py-1 text-right">PU HT</th>
-                        <th className="border px-2 py-1 text-right">Total HT</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {quoteItems.length === 0 || quoteItems.every(item => !item.description) ? (
-                        <tr><td colSpan={4} className="text-center italic text-muted-foreground">Aucune ligne de devis</td></tr>
-                      ) : (
-                        quoteItems.map((item, idx) => (
-                          <tr key={item.id || idx}>
-                            <td className="border px-2 py-1">{item.description || <span className="italic text-muted-foreground">(vide)</span>}</td>
-                            <td className="border px-2 py-1 text-right">{item.quantity}</td>
-                            <td className="border px-2 py-1 text-right">{item.unitPrice.toFixed(2)}€</td>
-                            <td className="border px-2 py-1 text-right">{item.total.toFixed(2)}€</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                {/* VERSION LISTE MOBILE */}
+<div className="flex flex-col gap-2 sm:hidden mb-4">
+  {quoteItems.length === 0 || quoteItems.every(item => !item.description) ? (
+    <div className="text-center italic text-muted-foreground bg-cyan-50 border-l-4 border-cyan-400 p-2 rounded shadow-sm">Aucune ligne de devis</div>
+  ) : (
+    quoteItems.map((item, idx) => (
+      <div key={item.id || idx} className="rounded-xl border-l-4 border-indigo-500 bg-white p-3 text-xs flex flex-col gap-1 shadow-md">
+        <div className="font-medium truncate">{item.description || <span className="italic text-cyan-400">(vide)</span>}</div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground text-cyan-700">Quantité :</span>
+          <span>{item.quantity}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground text-cyan-700">PU HT :</span>
+          <span>{item.unitPrice.toFixed(2)}€</span>
+        </div>
+        <div className="flex justify-between font-semibold">
+          <span>Total HT :</span>
+          <span>{item.total.toFixed(2)}€</span>
+        </div>
+      </div>
+    ))
+  )}
+</div>
+{/* VERSION TABLEAU DESKTOP */}
+<div className="overflow-x-auto mb-4 hidden sm:block">
+  <table className="min-w-full border text-sm">
+    <thead className="bg-muted">
+      <tr>
+        <th className="border px-2 py-1 text-left text-indigo-600 font-semibold bg-indigo-50">Description</th>
+        <th className="border px-2 py-1 text-right text-indigo-600 font-semibold bg-indigo-50">Quantité</th>
+        <th className="border px-2 py-1 text-right text-indigo-600 font-semibold bg-indigo-50">PU HT</th>
+        <th className="border px-2 py-1 text-right text-indigo-600 font-semibold bg-indigo-50">Total HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      {quoteItems.length === 0 || quoteItems.every(item => !item.description) ? (
+        <tr><td colSpan={4} className="text-center italic text-muted-foreground bg-cyan-50 border-l-4 border-cyan-400 p-2 rounded shadow-sm">Aucune ligne de devis</td></tr>
+      ) : (
+        quoteItems.map((item, idx) => (
+          <tr key={item.id || idx}>
+            <td className="border px-2 py-1 bg-white">{item.description || <span className="italic text-cyan-400">(vide)</span>}</td>
+            <td className="border px-2 py-1 text-right text-indigo-600 font-semibold bg-indigo-50">{item.quantity}</td>
+            <td className="border px-2 py-1 text-right text-indigo-600 font-semibold bg-indigo-50">{item.unitPrice.toFixed(2)}€</td>
+            <td className="border px-2 py-1 text-right text-indigo-600 font-semibold bg-indigo-50">{item.total.toFixed(2)}€</td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
 
                 {/* TOTAUX */}
-                <div className="space-y-1">
+                <div className="space-y-1 bg-gray-50 p-4 rounded-xl shadow-md">
                   <div className="flex justify-between">
                     <span>Sous-total HT :</span>
                     <span className="font-medium">{subtotal.toFixed(2)}€</span>

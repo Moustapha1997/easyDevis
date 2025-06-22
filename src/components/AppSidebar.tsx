@@ -90,15 +90,30 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+  <SidebarMenuItem key={item.title}>
+    <SidebarMenuButton asChild>
+      <NavLink
+        to={item.url}
+        end
+        className={getNavCls}
+        onClick={() => {
+          // Ferme la sidebar mobile après navigation
+          if (typeof window !== "undefined" && window.innerWidth < 768) {
+            const sidebar = require("@/components/ui/sidebar");
+            if (sidebar && sidebar.useSidebar) {
+              try {
+                sidebar.useSidebar().setOpenMobile(false);
+              } catch {}
+            }
+          }
+        }}
+      >
+        <item.icon className="h-4 w-4" />
+        {!isCollapsed && <span>{item.title}</span>}
+      </NavLink>
+    </SidebarMenuButton>
+  </SidebarMenuItem>
+))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

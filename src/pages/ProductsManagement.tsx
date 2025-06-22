@@ -338,13 +338,13 @@ const ProductsManagement = () => {
               <Package className="w-7 h-7" />
               Produits & Services
             </h1>
-            <p className="text-muted-foreground">Gérez votre catalogue de produits et services</p>
+            <p className="text-cyan-700">Gérez votre catalogue de produits et services</p>
           </div>
 
           {/* Sélecteur de template */}
           <div className="flex gap-2">
             <select
-              className="border rounded px-2 py-1"
+              className="bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full text-xs font-semibold"
               id="template-select"
               defaultValue=""
               onChange={async (e) => {
@@ -371,14 +371,13 @@ const ProductsManagement = () => {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="gradient-primary border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-md"
                 onClick={resetForm}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nouveau produit
               </Button>
             </DialogTrigger>
-            
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>
@@ -391,7 +390,6 @@ const ProductsManagement = () => {
                   }
                 </DialogDescription>
               </DialogHeader>
-              
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
                   <div>
@@ -401,19 +399,18 @@ const ProductsManagement = () => {
                       value={formData.name || ""}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
+                      className="bg-white border border-gray-200 shadow-md rounded-xl"
                     />
                   </div>
-                  
                   <div>
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
                       value={formData.description || ""}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
-                      className="min-h-[80px]"
+                      className="bg-white border border-gray-200 shadow-md rounded-xl min-h-[80px]"
                     />
                   </div>
-                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">Prix *</Label>
@@ -425,6 +422,7 @@ const ProductsManagement = () => {
                         value={formData.price || 0}
                         onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
                         required
+                        className="bg-white border border-gray-200 shadow-md rounded-xl"
                       />
                     </div>
                     <div>
@@ -435,10 +433,10 @@ const ProductsManagement = () => {
                         onChange={(e) => setFormData({...formData, unit: e.target.value})}
                         placeholder="ex: heure, forfait, pièce"
                         required
+                        className="bg-white border border-gray-200 shadow-md rounded-xl"
                       />
                     </div>
                   </div>
-                  
                   <div>
                     <Label htmlFor="category">Catégorie *</Label>
                     <Input
@@ -447,15 +445,15 @@ const ProductsManagement = () => {
                       onChange={(e) => setFormData({...formData, category: e.target.value})}
                       placeholder="ex: Web, Design, Service"
                       required
+                      className="bg-white border border-gray-200 shadow-md rounded-xl"
                     />
                   </div>
                 </div>
-                
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full">
                     Annuler
                   </Button>
-                  <Button type="submit" disabled={createProduct.isPending || updateProduct.isPending}>
+                  <Button type="submit" disabled={createProduct.isPending || updateProduct.isPending} className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-md">
                     {createProduct.isPending || updateProduct.isPending 
                       ? "En cours..." 
                       : (editingProduct ? "Modifier" : "Ajouter")
@@ -467,120 +465,78 @@ const ProductsManagement = () => {
           </Dialog>
         </div>
 
-        {/* Search */}
-        <Card className="shadow-card border-0">
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Rechercher un produit par nom ou catégorie..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Search bar */}
+        <div className="mb-4">
+          <Input
+            placeholder="Rechercher par nom ou catégorie..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-xs bg-white border border-gray-200 shadow-md rounded-full"
+          />
+        </div>
 
-        {/* Categories Overview */}
-        {categories.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {categories.map((category) => {
-              const categoryProducts = products.filter(p => p.category === category);
-              const averagePrice = categoryProducts.reduce((sum, p) => sum + p.price, 0) / categoryProducts.length;
-              
-              return (
-                <Card key={category} className="shadow-card border-0">
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <h3 className="font-semibold">{category}</h3>
-                      <p className="text-2xl font-bold text-primary">{categoryProducts.length}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Prix moyen: {averagePrice.toFixed(0)}€
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+        {/* Products grid/list */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="shadow-card hover:shadow-card-hover transition-all duration-200 border-0">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg flex items-center gap-2">{product.name} {product.is_template && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Modèle par défaut</span>}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {product.category && (
-                        <span className="inline-block px-2 py-1 bg-muted rounded-full text-xs">
-                          {product.category}
-                        </span>
-                      )}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">{product.description}</p>
-                
+            <Card key={product.id} className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
+              <CardContent className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <Euro className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xl font-bold">{product.price}€</span>
+                  <div>
+                    <div className="font-semibold text-indigo-700">{product.name}</div>
+                    <div className="text-xs text-muted-foreground">{product.description}</div>
                   </div>
-                  <span className="text-sm text-muted-foreground">/ {product.unit}</span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
+                      onClick={() => handleEdit(product)}
+                      disabled={product.is_template}
+                      title={product.is_template ? "Produit partagé par défaut, non modifiable" : "Modifier"}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(product.id)}
+                      disabled={deleteProduct.isPending || product.is_template}
+                      title={product.is_template ? "Produit partagé par défaut, non supprimable" : "Supprimer"}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleEdit(product)}
-                    disabled={product.is_template}
-                    title={product.is_template ? "Produit partagé par défaut, non modifiable" : "Modifier"}
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Modifier
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(product.id)}
-                    disabled={deleteProduct.isPending || product.is_template}
-                    title={product.is_template ? "Produit partagé par défaut, non supprimable" : "Supprimer"}
-                  >
-                    <Trash className="w-4 h-4" />
-                  </Button>
+                <div className="flex items-center text-xs text-gray-500 gap-4">
+                  <span>Prix: <span className="font-bold text-indigo-700">{product.price} €</span> / {product.unit}</span>
+                  <span className="bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full">{product.category}</span>
+                  {product.is_template && (
+                    <span className="bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full ml-2" title="Produit partagé par défaut">Template</span>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
+          {filteredProducts.length === 0 && (
+            <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
+              <CardContent className="text-center py-12">
+                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Aucun produit trouvé</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm 
+                    ? "Aucun produit ne correspond à votre recherche." 
+                    : "Commencez par ajouter votre premier produit ou service."
+                  }
+                </p>
+                <Button onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter un produit
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
-
-        {filteredProducts.length === 0 && (
-          <Card className="shadow-card border-0">
-            <CardContent className="text-center py-12">
-              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Aucun produit trouvé</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm 
-                  ? "Aucun produit ne correspond à votre recherche." 
-                  : "Commencez par ajouter votre premier produit ou service."
-                }
-              </p>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter un produit
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </Layout>
   );
