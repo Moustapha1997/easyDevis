@@ -1,9 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuotes } from "@/hooks/useQuotes";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Pencil, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Loader2, Receipt } from "lucide-react";
 import { generateQuotePDF } from "@/lib/generatePDF";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const statusColors: Record<string, string> = {
   draft:    "bg-gray-100 text-gray-600",
@@ -21,8 +26,64 @@ const QuoteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: quotes, isLoading, isFetching } = useQuotes();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [isConverting, setIsConverting] = useState(false);
 
   const quote = quotes?.find(q => q.id === id);
+
+  const handleConvertToInvoice = async () => {
+    if (!quote || !user) return;
+    setIsConverting(true);
+    try {
+      const today = new Date();
+      const invoiceNumber = `FAC-${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}-${Date.now().toString().slice(-4)}`;
+      const dueDate = new Date(today); dueDate.setDate(dueDate.getDate() + 30);
+
+      const { data: inv, error: invErr } = await supabase
+        .from("invoices")
+        .insert([{
+          user_id: user.id,
+          client_id: quote.client_id,
+          quote_id: quote.id,
+          invoice_number: invoiceNumber,
+          status: "unpaid",
+          issue_date: today.toISOString().split("T")[0],
+          due_date: dueDate.toISOString().split("T")[0],
+          subtotal: quote.subtotal,
+          tax_rate: quote.tax_rate ?? 0,
+          tax_amount: quote.tax_amount ?? 0,
+          total: quote.total,
+          notes: quote.notes,
+          terms: quote.terms,
+        }])
+        .select()
+        .single();
+      if (invErr) throw invErr;
+
+      const items = (quote.items ?? []).map(i => ({
+        invoice_id: inv.id,
+        reference: i.reference ?? null,
+        name: i.description ?? i.name,
+        description: i.description ?? i.name,
+        quantity: Number(i.quantity),
+        unit_price: Number(i.unit_price),
+        total: Number(i.total),
+      }));
+      if (items.length > 0) {
+        const { error: iErr } = await supabase.from("invoice_items").insert(items);
+        if (iErr) throw iErr;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("Facture créée !");
+      navigate(`/invoices/${inv.id}`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur lors de la conversion");
+    } finally {
+      setIsConverting(false);
+    }
+  };
 
   // Afficher le spinner tant que les données ne sont pas arrivées
   const stillLoading = isLoading || isFetching || (quotes === undefined);
@@ -36,6 +97,7 @@ const QuoteDetail = () => {
       quoteNumber: quote.quote_number,
       issueDate: quote.issue_date,
       clientName: quote.clients?.name ?? "",
+      clientAddress: [quote.clients?.address, quote.clients?.postal_code, quote.clients?.city].filter(Boolean).join(", "),
       items: (quote.items ?? []).map(i => ({
         reference: i.reference ?? "",
         description: i.description ?? i.name,
@@ -75,22 +137,37 @@ const QuoteDetail = () => {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto space-y-5">
+      {/* Padding bottom mobile pour la barre fixe */}
+      <div className="max-w-3xl mx-auto space-y-5 pb-24 sm:pb-0">
 
-        {/* Nav */}
-        <div className="flex items-center justify-between">
+        {/* Nav desktop uniquement */}
+        <div className="hidden sm:flex items-center justify-between">
           <button onClick={() => navigate("/quotes")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900">
             <ArrowLeft className="w-4 h-4" /> Retour
           </button>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => navigate(`/create-quote?id=${quote.id}`)}>
+            <Button variant="outline" className="gap-2 rounded-xl h-9" onClick={() => navigate(`/create-quote?id=${quote.id}`)}>
               <Pencil className="w-4 h-4" /> Modifier
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={handleDownloadPDF}>
+            <Button
+              variant="outline"
+              className="gap-2 rounded-xl h-9 border-green-200 text-green-700 hover:bg-green-50"
+              onClick={handleConvertToInvoice}
+              disabled={isConverting}
+            >
+              {isConverting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+              Convertir en facture
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 rounded-xl h-9" onClick={handleDownloadPDF}>
               <Download className="w-4 h-4" /> Télécharger PDF
             </Button>
           </div>
         </div>
+
+        {/* Retour mobile */}
+        <button onClick={() => navigate("/quotes")} className="flex sm:hidden items-center gap-1 text-sm text-gray-500">
+          <ArrowLeft className="w-4 h-4" /> Retour aux devis
+        </button>
 
         {/* Aperçu du devis — style fidèle au PDF */}
         <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-8 font-sans">
@@ -129,7 +206,12 @@ const QuoteDetail = () => {
 
           {/* Client */}
           <div className="mb-5">
-            <p className="text-sm font-semibold text-gray-800">Nom client : {quote.clients?.name}</p>
+            <p className="text-sm font-bold text-gray-800">Nom client : {quote.clients?.name}</p>
+            {(quote.clients?.address || quote.clients?.postal_code || quote.clients?.city) && (
+              <p className="text-sm text-gray-600 mt-0.5">
+                Adresse : {[quote.clients?.address, quote.clients?.postal_code, quote.clients?.city].filter(Boolean).join(", ")}
+              </p>
+            )}
           </div>
 
           {/* Titre devis */}
@@ -192,6 +274,41 @@ const QuoteDetail = () => {
         </div>
 
       </div>
+
+      {/* ── Barre fixe mobile ───────────────────────────────────────── */}
+      <div className="sm:hidden fixed bottom-16 left-0 right-0 z-40 bg-white border-t border-gray-100 px-3 py-2.5 grid grid-cols-3 gap-2 shadow-lg">
+        {/* Modifier */}
+        <button
+          onClick={() => navigate(`/create-quote?id=${quote.id}`)}
+          className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+        >
+          <Pencil className="w-4 h-4 text-gray-600" />
+          <span className="text-[10px] font-semibold text-gray-600">Modifier</span>
+        </button>
+
+        {/* Convertir en facture */}
+        <button
+          onClick={handleConvertToInvoice}
+          disabled={isConverting}
+          className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-green-50 hover:bg-green-100 transition-colors disabled:opacity-40"
+        >
+          {isConverting
+            ? <Loader2 className="w-4 h-4 text-green-600 animate-spin" />
+            : <Receipt className="w-4 h-4 text-green-600" />
+          }
+          <span className="text-[10px] font-semibold text-green-700">Facture</span>
+        </button>
+
+        {/* Télécharger PDF */}
+        <button
+          onClick={handleDownloadPDF}
+          className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors"
+        >
+          <Download className="w-4 h-4 text-white" />
+          <span className="text-[10px] font-semibold text-white">PDF</span>
+        </button>
+      </div>
+
     </Layout>
   );
 };

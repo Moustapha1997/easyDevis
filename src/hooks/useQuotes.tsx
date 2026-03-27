@@ -34,6 +34,9 @@ export interface Quote {
   clients?: {
     name: string;
     email: string | null;
+    address: string | null;
+    postal_code: string | null;
+    city: string | null;
   };
   items?: QuoteItem[];
 }
@@ -50,14 +53,14 @@ export const useQuotes = () => {
         .from('quotes')
         .select(`
           *,
-          clients (name, email),
+          clients (name, email, address, postal_code, city),
           items:quote_items (*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as Quote[];
+      return (data ?? []) as unknown as Quote[];
     },
     enabled: !!user,
   });

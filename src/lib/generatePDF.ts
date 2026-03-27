@@ -95,10 +95,12 @@ export function generateQuotePDF(quote: PDFQuoteData, company: CompanyInfo): voi
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "bold");
   doc.text(`Nom client : ${quote.clientName}`, margin, contentY);
-  contentY += 5;
+  contentY += 6;
+  doc.setFont("helvetica", "normal");
   if (quote.clientAddress) {
-    doc.text(quote.clientAddress, margin, contentY);
+    doc.text(`Adresse : ${quote.clientAddress}`, margin, contentY);
     contentY += 5;
   }
   if (quote.clientCity) {

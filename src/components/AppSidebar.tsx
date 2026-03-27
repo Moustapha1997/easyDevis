@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Plus, Users, Package, Settings } from "lucide-react";
+import { LayoutDashboard, FileText, Plus, Users, Package, Settings, Receipt } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -7,12 +7,13 @@ import {
 import { UserMenu } from "@/components/UserMenu";
 
 const items = [
-  { title: "Tableau de bord", url: "/",             icon: LayoutDashboard },
-  { title: "Mes devis",       url: "/quotes",        icon: FileText },
-  { title: "Créer un devis",  url: "/create-quote",  icon: Plus },
-  { title: "Clients",         url: "/clients",       icon: Users },
-  { title: "Produits/Services", url: "/products",    icon: Package },
-  { title: "Paramètres",      url: "/settings",      icon: Settings },
+  { title: "Tableau de bord",   url: "/",             icon: LayoutDashboard },
+  { title: "Mes devis",         url: "/quotes",        icon: FileText },
+  { title: "Créer un devis",    url: "/create-quote",  icon: Plus },
+  { title: "Mes factures",      url: "/invoices",      icon: Receipt },
+  { title: "Clients",           url: "/clients",       icon: Users },
+  { title: "Produits/Services", url: "/products",      icon: Package },
+  { title: "Paramètres",        url: "/settings",      icon: Settings },
 ];
 
 export function AppSidebar() {

@@ -1,12 +1,12 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, Plus, Users, Package } from "lucide-react";
+import { LayoutDashboard, FileText, Plus, Users, Receipt } from "lucide-react";
 
 const items = [
   { title: "Accueil",   url: "/",             icon: LayoutDashboard },
   { title: "Devis",     url: "/quotes",        icon: FileText },
-  { title: "Créer",     url: "/create-quote",  icon: Plus,   primary: true },
+  { title: "Créer",     url: "/create-quote",  icon: Plus,    primary: true },
+  { title: "Factures",  url: "/invoices",      icon: Receipt },
   { title: "Clients",   url: "/clients",       icon: Users },
-  { title: "Services",  url: "/products",      icon: Package },
 ];
 
 export function BottomNav() {

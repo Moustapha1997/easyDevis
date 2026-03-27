@@ -51,6 +51,122 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          invoice_id: string
+          name: string
+          quantity: number
+          reference: string | null
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoice_id: string
+          name: string
+          quantity?: number
+          reference?: string | null
+          total?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoice_id?: string
+          name?: string
+          quantity?: number
+          reference?: string | null
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          notes: string | null
+          quote_id: string | null
+          status: string
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          terms: string | null
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          notes?: string | null
+          quote_id?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          terms?: string | null
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          notes?: string | null
+          quote_id?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          terms?: string | null
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -132,6 +248,7 @@ export type Database = {
           product_id: string | null
           quantity: number
           quote_id: string
+          reference: string | null
           total: number
           unit_price: number
         }
@@ -143,6 +260,7 @@ export type Database = {
           product_id?: string | null
           quantity?: number
           quote_id: string
+          reference?: string | null
           total?: number
           unit_price?: number
         }
@@ -154,6 +272,7 @@ export type Database = {
           product_id?: string | null
           quantity?: number
           quote_id?: string
+          reference?: string | null
           total?: number
           unit_price?: number
         }

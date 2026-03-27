@@ -16,6 +16,8 @@ import ClientsManagement from "./pages/ClientsManagement";
 import ProductsManagement from "./pages/ProductsManagement";
 import NotFound from "./pages/NotFound";
 import QuoteDetail from "./pages/QuoteDetail";
+import InvoicesList from "./pages/InvoicesList";
+import InvoiceDetail from "./pages/InvoiceDetail";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
@@ -78,6 +80,20 @@ const App = () => (
               <ProtectedRoute>
                 <SidebarProvider>
                   <ProductsManagement />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/invoices" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <InvoicesList />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/invoices/:id" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <InvoiceDetail />
                 </SidebarProvider>
               </ProtectedRoute>
             } />

@@ -299,61 +299,57 @@ const CreateQuote = () => {
           </div>
         )}
 
-        {/* Lignes du devis */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lignes du devis</p>
+        {/* Lignes du devis — tableau */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="px-4 pt-4 pb-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lignes du devis</p>
+          </div>
 
-          {quoteItems.map((item, idx) => (
-            <div key={item.id} className="rounded-xl border border-gray-100 bg-gray-50 p-3 space-y-2">
-              {/* Ligne n° + supprimer */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-400">Ligne {idx + 1}</span>
-                <button
-                  onClick={() => setQuoteItems(prev => prev.length > 1 ? prev.filter(i => i.id !== item.id) : prev)}
-                  disabled={quoteItems.length === 1}
-                  className="text-gray-300 hover:text-red-400 disabled:opacity-20 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+          {/* En-tête tableau */}
+          <div className="grid grid-cols-[2fr_4fr_1fr_2fr_2fr_auto] gap-0 bg-blue-600 text-white text-xs font-semibold px-3 py-2">
+            <div className="px-1">Référence</div>
+            <div className="px-1">Description</div>
+            <div className="px-1 text-center">Qté</div>
+            <div className="px-1 text-right">Prix unit.</div>
+            <div className="px-1 text-right">Total</div>
+            <div className="w-6"></div>
+          </div>
 
-              {/* Référence */}
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Référence</Label>
-                <Input
-                  placeholder="Réf."
-                  value={item.reference}
-                  onChange={e => updateItem(item.id, 'reference', e.target.value)}
-                  className="h-9 text-sm bg-white rounded-lg"
-                />
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Description *</Label>
-                <Textarea
-                  placeholder="Description du travail / service…"
-                  value={item.description}
-                  onChange={e => updateItem(item.id, 'description', e.target.value)}
-                  className="text-sm bg-white resize-none min-h-[64px] rounded-lg"
-                />
-              </div>
-
-              {/* Qté + Prix unitaire + Total */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Quantité</Label>
+          {/* Lignes */}
+          <div className="divide-y divide-gray-100">
+            {quoteItems.map((item, idx) => (
+              <div key={item.id} className={`grid grid-cols-[2fr_4fr_1fr_2fr_2fr_auto] gap-0 px-3 py-2 items-start ${idx % 2 === 1 ? 'bg-blue-50/40' : 'bg-white'}`}>
+                {/* Référence */}
+                <div className="px-1">
+                  <Input
+                    placeholder="Réf."
+                    value={item.reference}
+                    onChange={e => updateItem(item.id, 'reference', e.target.value)}
+                    className="h-8 text-xs bg-white border-gray-200 rounded-lg px-2"
+                  />
+                </div>
+                {/* Description */}
+                <div className="px-1">
+                  <Textarea
+                    placeholder="Description…"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    className="text-xs bg-white border-gray-200 resize-none min-h-[32px] max-h-[80px] rounded-lg px-2 py-1.5"
+                  />
+                </div>
+                {/* Quantité */}
+                <div className="px-1">
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
                     value={item.quantity}
                     onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                    className="h-9 text-sm text-center bg-white rounded-lg"
+                    className="h-8 text-xs text-center bg-white border-gray-200 rounded-lg px-1"
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Prix unitaire</Label>
+                {/* Prix unitaire */}
+                <div className="px-1">
                   <Input
                     type="number"
                     min="0"
@@ -361,18 +357,28 @@ const CreateQuote = () => {
                     placeholder="0.00"
                     value={item.unitPrice}
                     onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                    className="h-9 text-sm text-right bg-white rounded-lg"
+                    className="h-8 text-xs text-right bg-white border-gray-200 rounded-lg px-2"
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Total</Label>
-                  <div className="h-9 flex items-center justify-end px-3 bg-blue-50 rounded-lg text-sm font-bold text-blue-700">
+                {/* Total */}
+                <div className="px-1">
+                  <div className="h-8 flex items-center justify-end px-2 bg-blue-50 border border-blue-100 rounded-lg text-xs font-bold text-blue-700">
                     {item.total.toFixed(2)} €
                   </div>
                 </div>
+                {/* Supprimer */}
+                <div className="flex items-start justify-center pt-1 w-6">
+                  <button
+                    onClick={() => setQuoteItems(prev => prev.length > 1 ? prev.filter(i => i.id !== item.id) : prev)}
+                    disabled={quoteItems.length === 1}
+                    className="text-gray-300 hover:text-red-400 disabled:opacity-20 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
           <button
             onClick={() => setQuoteItems(prev => [...prev, emptyItem()])}
