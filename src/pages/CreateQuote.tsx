@@ -215,20 +215,38 @@ const CreateQuote = () => {
   return (
     <Layout>
       {/* Contenu principal avec padding-bottom pour la barre d'action mobile */}
-      <div className="max-w-2xl mx-auto space-y-4 pb-32 sm:pb-6">
+      <div className="max-w-2xl mx-auto space-y-4 pb-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{editId ? "Modifier le devis" : "Nouveau devis"}</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Remplissez les informations</p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-gray-900 truncate">{editId ? "Modifier le devis" : "Nouveau devis"}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">Remplissez les informations</p>
           </div>
-          {/* Boutons desktop uniquement */}
-          <div className="hidden sm:flex gap-2">
-            <Button variant="outline" onClick={handleGeneratePDF} disabled={isSaving} className="rounded-xl gap-1.5 h-9">
+          {/* Boutons visibles sur mobile ET desktop */}
+          <div className="flex gap-1.5 flex-shrink-0">
+            {/* Mobile : icône seule */}
+            <button
+              onClick={handleGeneratePDF}
+              disabled={isSaving}
+              title="Télécharger PDF"
+              className="sm:hidden w-9 h-9 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors disabled:opacity-40"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              title="Enregistrer"
+              className="sm:hidden w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 transition-colors disabled:opacity-40"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            </button>
+            {/* Desktop : icône + texte */}
+            <Button variant="outline" onClick={handleGeneratePDF} disabled={isSaving} className="hidden sm:flex rounded-xl gap-1.5 h-9">
               <Download className="w-4 h-4" /> PDF
             </Button>
-            <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl gap-1.5 h-9 shadow-sm shadow-blue-200">
+            <Button onClick={handleSave} disabled={isSaving} className="hidden sm:flex bg-blue-600 hover:bg-blue-700 text-white rounded-xl gap-1.5 h-9 shadow-sm shadow-blue-200">
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Enregistrer
             </Button>
@@ -405,25 +423,6 @@ const CreateQuote = () => {
 
       </div>
 
-      {/* Barre d'action fixe mobile */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 px-4 py-3 flex gap-2 safe-area-pb">
-        <Button
-          variant="outline"
-          onClick={handleGeneratePDF}
-          disabled={isSaving}
-          className="flex-1 rounded-xl h-11 gap-1.5"
-        >
-          <Download className="w-4 h-4" /> PDF
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 gap-1.5 shadow-sm shadow-blue-200"
-        >
-          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Enregistrer
-        </Button>
-      </div>
     </Layout>
   );
 };
