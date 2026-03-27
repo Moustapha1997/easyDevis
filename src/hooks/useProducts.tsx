@@ -27,12 +27,11 @@ export const useProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .or(`user_id.eq.${user.id},is_template.eq.true`)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      // Ajout d'une sécurité pour is_template (pour compatibilité)
-      return (data as Product[]).map(p => ({ ...p, is_template: !!p.is_template }));
+      return data as Product[];
     },
     enabled: !!user,
   });

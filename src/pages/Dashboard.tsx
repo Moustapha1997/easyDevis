@@ -1,12 +1,20 @@
 
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, TrendingUp, Euro, Users, Plus, Eye, Loader, Settings, User, HelpCircle, AlertCircle } from "lucide-react";
+import { FileText, TrendingUp, Euro, Users, Plus, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/hooks/useAuth";
+
+const statusConfig: Record<string, { label: string; className: string }> = {
+  accepted: { label: "Accepté",   className: "bg-green-50 text-green-700" },
+  sent:     { label: "Envoyé",    className: "bg-blue-50 text-blue-700" },
+  rejected: { label: "Refusé",    className: "bg-red-50 text-red-700" },
+  draft:    { label: "Brouillon", className: "bg-gray-100 text-gray-600" },
+  expired:  { label: "Expiré",    className: "bg-orange-50 text-orange-700" },
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -14,357 +22,154 @@ const Dashboard = () => {
   const { data: clients, isLoading: clientsLoading } = useClients();
   const { user } = useAuth();
 
-  // Calculate stats from real data
-  const totalQuotes = quotes?.length || 0;
-  const acceptedQuotes = quotes?.filter(q => q.status === 'accepted').length || 0;
+  const totalQuotes = quotes?.length ?? 0;
+  const acceptedQuotes = quotes?.filter(q => q.status === "accepted").length ?? 0;
   const acceptanceRate = totalQuotes > 0 ? Math.round((acceptedQuotes / totalQuotes) * 100) : 0;
-  const totalRevenue = quotes?.filter(q => q.status === 'accepted').reduce((sum, q) => sum + q.total, 0) || 0;
-  const activeClients = clients?.length || 0;
+  const totalRevenue = quotes?.filter(q => q.status === "accepted").reduce((s, q) => s + q.total, 0) ?? 0;
+  const activeClients = clients?.length ?? 0;
 
   const stats = [
-    {
-      title: "Total des devis",
-      value: totalQuotes.toString(),
-      description: `${totalQuotes} devis créés`,
-      icon: FileText,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: "Taux d'acceptation",
-      value: `${acceptanceRate}%`,
-      description: `${acceptedQuotes} devis acceptés`,
-      icon: TrendingUp,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: "Revenus estimés",
-      value: `${totalRevenue.toLocaleString()}€`,
-      description: "Devis acceptés",
-      icon: Euro,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-    {
-      title: "Clients actifs",
-      value: activeClients.toString(),
-      description: `${activeClients} clients`,
-      icon: Users,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
+    { title: "Total devis",       value: totalQuotes,                         icon: FileText,   color: "text-blue-600",   bg: "bg-blue-50" },
+    { title: "Taux d'acceptation",value: `${acceptanceRate}%`,                icon: TrendingUp, color: "text-green-600",  bg: "bg-green-50" },
+    { title: "Revenus estimés",   value: `${totalRevenue.toLocaleString()} €`,icon: Euro,       color: "text-purple-600", bg: "bg-purple-50" },
+    { title: "Clients",           value: activeClients,                       icon: Users,      color: "text-orange-600", bg: "bg-orange-50" },
   ];
-
-  // Get recent quotes (last 4)
-  const recentQuotes = quotes?.slice(0, 4) || [];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "accepted":
-        return "bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full text-xs font-semibold";
-      case "sent":
-        return "bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-semibold";
-      case "rejected":
-        return "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-semibold";
-      case "draft":
-        return "bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-semibold";
-      case "expired":
-        return "bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-semibold";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "accepted":
-        return "Accepté";
-      case "sent":
-        return "Envoyé";
-      case "rejected":
-        return "Refusé";
-      case "draft":
-        return "Brouillon";
-      case "expired":
-        return "Expiré";
-      default:
-        return status;
-    }
-  };
 
   if (quotesLoading || clientsLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader className="w-8 h-8 animate-spin" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
         </div>
       </Layout>
     );
   }
 
-  // Le return principal doit être dans le même bloc de fonction
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto py-8 animate-fade-in bg-gray-50">
-        {/* Message de bienvenue */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="max-w-5xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-indigo-600">Tableau de bord</h1>
-            <p className="text-muted-foreground">
-              Bienvenue{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : user?.email ? `, ${user.email}` : ''} ! Voici un aperçu de votre activité.
-            </p>
+            <h1 className="text-xl font-semibold text-gray-900">
+              Bonjour{user?.email ? `, ${user.email.split("@")[0]}` : ""} 👋
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">Voici un aperçu de votre activité</p>
           </div>
-          <Button 
-            onClick={() => navigate("/create-quote")}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-md"
-          >
+          <Button onClick={() => navigate("/create-quote")} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
             Nouveau devis
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, idx) => (
-            <Card key={idx} className={`shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl`}>
-              <CardHeader>
-                <CardTitle className={`flex items-center gap-2 text-indigo-600 font-bold`}>
-                  <stat.icon className="w-5 h-5" /> {stat.title}
-                </CardTitle>
-                <CardDescription>{stat.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold text-indigo-600">{stat.value}</div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((s, i) => (
+            <Card key={i} className="border border-gray-100 shadow-none">
+              <CardContent className="p-4">
+                <div className={`w-9 h-9 rounded-lg ${s.bg} flex items-center justify-center mb-3`}>
+                  <s.icon className={`w-4 h-4 ${s.color}`} />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{s.value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{s.title}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Activité récente */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Devis modifiés */}
-          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
-                <FileText className="w-5 h-5" /> Derniers devis modifiés
-              </CardTitle>
-              <CardDescription>Vos derniers devis créés ou modifiés</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {quotes && quotes.length > 0 ? (
-                  quotes.slice(0, 3).map((quote) => {
-                    return (
-                      <div key={quote.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium">{quote.clients?.name || 'Client inconnu'}</p>
-                          <p className="text-xl text-cyan-700">
-                            {new Date(quote.updated_at || quote.issue_date).toLocaleDateString('fr-FR')}
-                          </p>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <p className="font-semibold">{quote.total.toLocaleString()}€</p>
-                          <span className={`inline-block px-2 py-1 text-xs rounded-full border ${getStatusColor(quote.status)}`}>
-                            {getStatusLabel(quote.status)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Aucun devis</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          {/* Nouveaux clients */}
-          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
-                <Users className="w-5 h-5" /> Nouveaux clients
-              </CardTitle>
-              <CardDescription>Derniers clients ajoutés</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {clients && clients.length > 0 ? (
-                  clients.slice(0, 3).map((client) => {
-                    return (
-                      <div key={client.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                        <div>
-                          <p className="font-medium">{client.name}</p>
-                          <p className="text-xl text-cyan-700">{client.email || '—'}</p>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Aucun client</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Two columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        {/* Alertes & Raccourcis */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Bloc Alertes */}
-          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-500 font-bold">
-                <AlertCircle className="w-5 h-5" /> Alertes
-              </CardTitle>
-              <CardDescription>Points à surveiller</CardDescription>
+          {/* Recent quotes */}
+          <Card className="border border-gray-100 shadow-none">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-gray-900">Devis récents</CardTitle>
+                <button
+                  onClick={() => navigate("/quotes")}
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  Voir tout <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex items-center gap-2 text-indigo-600 font-bold">
-                <span className="font-bold text-2xl text-indigo-600">
-                  {quotes?.filter(q => q.status === 'sent').length || 0}
-                </span>
-                <span>devis à relancer</span>
-              </div>
-              <div className="flex items-center gap-2 text-indigo-600 font-bold">
-                <span className="font-bold text-2xl text-indigo-600">
-                  {quotes?.filter(q => q.status === 'expired').length || 0}
-                </span>
-                <span>devis expirés</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Bloc Raccourcis */}
-          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
-                <Settings className="w-5 h-5" /> Raccourcis
-              </CardTitle>
-              <CardDescription>Accès rapide aux paramètres</CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-4 flex-wrap">
-              <Button 
-                onClick={() => navigate('/profile')}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
-                variant="outline"
-              >
-                <User className="w-4 h-4 mr-2" /> Profil
-              </Button>
-              <Button 
-                onClick={() => navigate('/settings')}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
-                variant="outline"
-              >
-                <Settings className="w-4 h-4 mr-2" /> Paramètres
-              </Button>
-              <Button 
-                onClick={() => window.open('https://easydevis-docs.example.com', '_blank')}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
-                variant="outline"
-              >
-                <HelpCircle className="w-4 h-4 mr-2" /> Aide
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-indigo-600 font-bold">
-                <FileText className="w-5 h-5" />
-                Devis récents
-              </CardTitle>
-              <CardDescription>
-                Vos derniers devis créés
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentQuotes.length > 0 ? (
-                  recentQuotes.map((quote) => (
-                    <div key={quote.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium">{quote.clients?.name || 'Client inconnu'}</p>
-                        <p className="text-xl text-cyan-700">
-                          {new Date(quote.issue_date).toLocaleDateString('fr-FR')}
-                        </p>
+              {quotes && quotes.length > 0 ? (
+                quotes.slice(0, 5).map((quote) => {
+                  const cfg = statusConfig[quote.status] ?? { label: quote.status, className: "bg-gray-100 text-gray-600" };
+                  return (
+                    <div
+                      key={quote.id}
+                      className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded px-2 -mx-2"
+                      onClick={() => navigate(`/quotes/${quote.id}`)}
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{quote.clients?.name ?? "Client inconnu"}</p>
+                        <p className="text-xs text-gray-400">{new Date(quote.issue_date).toLocaleDateString("fr-FR")}</p>
                       </div>
-                      <div className="text-right space-y-1">
-                        <p className="font-semibold">{quote.total.toLocaleString()}€</p>
-                        <span className={`inline-block px-2 py-1 text-xs rounded-full border ${getStatusColor(quote.status)}`}>
-                          {getStatusLabel(quote.status)}
-                        </span>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-900">{quote.total.toLocaleString()} €</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.className}`}>{cfg.label}</span>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Aucun devis créé pour le moment</p>
-                  </div>
-                )}
-              </div>
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
-                onClick={() => navigate("/quotes")}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Voir tous les devis
-              </Button>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-6">Aucun devis pour le moment</p>
+              )}
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card className="shadow-card border-0 bg-white border border-gray-200 shadow-md rounded-xl">
-            <CardHeader>
-              <CardTitle>Actions rapides</CardTitle>
-              <CardDescription>
-                Accédez rapidement aux fonctionnalités principales
-              </CardDescription>
+          {/* Quick actions */}
+          <Card className="border border-gray-100 shadow-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">Actions rapides</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                onClick={() => navigate("/create-quote")}
-                className="w-full justify-start h-12 text-left bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-md"
-              >
-                <Plus className="w-5 h-5 mr-3" />
-                <div>
-                  <div className="font-medium">Créer un nouveau devis</div>
-                  <div className="text-xl text-cyan-700">Démarrer un nouveau devis</div>
-                </div>
-              </Button>
-              
-              <Button 
-                onClick={() => navigate("/clients")}
-                className="w-full justify-start h-12 text-left bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
-                variant="outline"
-              >
-                <Users className="w-5 h-5 mr-3" />
-                <div>
-                  <div className="font-medium">Gérer les clients</div>
-                  <div className="text-xl text-cyan-700">Ajouter ou modifier des clients</div>
-                </div>
-              </Button>
-              
-              <Button 
-                onClick={() => navigate("/products")}
-                className="w-full justify-start h-12 text-left bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
-                variant="outline"
-              >
-                <FileText className="w-5 h-5 mr-3" />
-                <div>
-                  <div className="font-medium">Gérer les produits</div>
-                  <div className="text-xl text-cyan-700">Ajouter ou modifier des produits</div>
-                </div>
-              </Button>
+            <CardContent className="space-y-2">
+              {[
+                { label: "Créer un nouveau devis", desc: "Démarrer un devis vierge", icon: Plus,     path: "/create-quote", primary: true },
+                { label: "Gérer les clients",      desc: "Ajouter ou modifier",       icon: Users,    path: "/clients",       primary: false },
+                { label: "Gérer les produits",     desc: "Catalogue de services",     icon: FileText, path: "/products",      primary: false },
+              ].map((a) => (
+                <button
+                  key={a.path}
+                  onClick={() => navigate(a.path)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                    a.primary
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-gray-50 hover:bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  <a.icon className="w-4 h-4 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{a.label}</p>
+                    <p className={`text-xs ${a.primary ? "text-blue-200" : "text-gray-400"}`}>{a.desc}</p>
+                  </div>
+                </button>
+              ))}
             </CardContent>
           </Card>
         </div>
+
+        {/* Alerts row */}
+        {(quotes?.filter(q => q.status === "sent").length ?? 0) > 0 || (quotes?.filter(q => q.status === "expired").length ?? 0) > 0 ? (
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="border border-yellow-100 bg-yellow-50 shadow-none">
+              <CardContent className="p-4 flex items-center gap-3">
+                <span className="text-2xl font-bold text-yellow-700">{quotes?.filter(q => q.status === "sent").length ?? 0}</span>
+                <p className="text-sm text-yellow-700">devis en attente de réponse</p>
+              </CardContent>
+            </Card>
+            <Card className="border border-red-100 bg-red-50 shadow-none">
+              <CardContent className="p-4 flex items-center gap-3">
+                <span className="text-2xl font-bold text-red-600">{quotes?.filter(q => q.status === "expired").length ?? 0}</span>
+                <p className="text-sm text-red-600">devis expirés</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+
       </div>
     </Layout>
   );

@@ -1,152 +1,59 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuotes } from "@/hooks/useQuotes";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Loader2 } from "lucide-react";
+import { generateQuotePDF } from "@/lib/generatePDF";
 
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+const statusColors: Record<string, string> = {
+  draft:    "bg-gray-100 text-gray-600",
+  sent:     "bg-blue-50 text-blue-700",
+  accepted: "bg-green-50 text-green-700",
+  rejected: "bg-red-50 text-red-700",
+  expired:  "bg-orange-50 text-orange-700",
+};
+
+const statusLabels: Record<string, string> = {
+  draft: "Brouillon", sent: "Envoyé", accepted: "Accepté", rejected: "Refusé", expired: "Expiré",
+};
 
 const QuoteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: quotes, isLoading } = useQuotes();
+  const { data: quotes, isLoading, isFetching } = useQuotes();
 
   const quote = quotes?.find(q => q.id === id);
 
-  const handleDownloadPDF = (quote: any) => {
-  const doc = new jsPDF();
+  // Afficher le spinner tant que les données ne sont pas arrivées
+  const stillLoading = isLoading || isFetching || (quotes === undefined);
 
-  // Récupère les infos société (localStorage)
-  let company = {
-    name: '', address: '', siret: '', email: '', phone: '', logo: '', footer: ''
+  const handleDownloadPDF = () => {
+    if (!quote) return;
+    let company = { name:'', subtitle:'', address:'', email:'', phone:'', siret:'', iban:'', logo:'' };
+    try { const s = localStorage.getItem('companyInfo'); if (s) company = { ...company, ...JSON.parse(s) }; } catch {}
+
+    generateQuotePDF({
+      quoteNumber: quote.quote_number,
+      issueDate: quote.issue_date,
+      clientName: quote.clients?.name ?? "",
+      items: (quote.items ?? []).map(i => ({
+        reference: i.reference ?? "",
+        description: i.description ?? i.name,
+        quantity: Number(i.quantity),
+        unitPrice: Number(i.unit_price),
+        total: Number(i.total),
+      })),
+      total: quote.total,
+      notes: quote.notes ?? undefined,
+      terms: quote.terms ?? undefined,
+    }, company);
   };
-  try {
-    const stored = localStorage.getItem('companyInfo');
-    if (stored) company = JSON.parse(stored);
-  } catch {}
 
-  // Prépare les données du tableau
-  let body = [];
-  if (quote.items && Array.isArray(quote.items) && quote.items.length > 0) {
-    body = quote.items.map((item: any) => [
-      item.description,
-      item.quantity,
-      (item.unit_price ?? item.unitPrice ?? 0).toFixed(2) + '€',
-      (item.total ?? ((item.quantity || 0) * (item.unit_price ?? item.unitPrice ?? 0))).toFixed(2) + '€',
-    ]);
-  }
-
-  // Utilise autoTable pour gérer l'entête et le pied de page sur chaque page
-  // Calcule la position Y du tableau pour garantir l'espacement
-  const infoBlockY = 54 + 8; // même que dans l'entête
-  const tableStartY = infoBlockY + 14; // 14px d'espace après la ligne info
-  autoTable(doc, {
-    startY: tableStartY,
-    head: [['Description', 'Quantité', 'PU HT', 'Total HT']],
-    body,
-    theme: 'grid',
-    headStyles: { fillColor: [41, 128, 185] },
-    styles: { fontSize: 11 },
-    margin: { top: tableStartY, bottom: 35 },
-    didDrawPage: (data) => {
-      // --- HEADER ---
-      let y = 15;
-      // Logo à gauche
-      if (company.logo) {
-        try {
-          doc.addImage(company.logo, 'PNG', 10, y, 32, 32);
-        } catch (e) {/* ignore logo if error */}
-      }
-      // Infos société à droite
-      doc.setFontSize(12);
-      let companyInfoY = y;
-      if (company.name) { doc.text(company.name, 45, companyInfoY); companyInfoY += 7; }
-      if (company.address) { doc.text(company.address, 45, companyInfoY); companyInfoY += 7; }
-      if (company.siret) { doc.text(`SIRET : ${company.siret}`, 45, companyInfoY); companyInfoY += 7; }
-      if (company.email) { doc.text(`Email : ${company.email}`, 45, companyInfoY); companyInfoY += 7; }
-      if (company.phone) { doc.text(`Téléphone : ${company.phone}`, 45, companyInfoY); companyInfoY += 7; }
-      // Ligne de séparation
-      doc.setDrawColor(200);
-      doc.line(10, 50, 200, 50);
-
-      // Infos devis et client sous la ligne (uniquement sur la première page)
-      if ((doc as any).internal.getCurrentPageInfo && (doc as any).internal.getCurrentPageInfo().pageNumber === 1) {
-        let infoY = 54 + 8; // Ajoute 8px d'espace après l'entête
-        doc.setFontSize(14);
-        doc.text(`DEVIS ${quote.quote_number}`, 10, infoY);
-        doc.setFontSize(11);
-        doc.text(`Client : ${quote.clients?.name || ''}`, 80, infoY);
-        doc.text(`Date : ${new Date(quote.issue_date).toLocaleDateString('fr-FR')}`, 160, infoY);
-      }
-      // (Footer supprimé ici, il sera dessiné en post-traitement sur toutes les pages)
-    },
-  });
-
-  // Après le tableau : totaux, notes, signature
-  let y = (doc as any).lastAutoTable.finalY + 10;
-  doc.setFontSize(12);
-  doc.text(`Sous-total HT : ${(quote.subtotal ?? 0).toFixed(2)}€`, 10, y); y += 7;
-  doc.text(`TVA (${quote.tax_rate ?? 20}%): ${(quote.tax_amount ?? 0).toFixed(2)}€`, 10, y); y += 7;
-  doc.setFontSize(13);
-  doc.text(`Total TTC : ${(quote.total ?? 0).toFixed(2)}€`, 10, y); y += 10;
-
-  doc.setFontSize(11);
-  if (quote.notes) {
-    doc.text(doc.splitTextToSize('Notes : ' + quote.notes, 180), 10, y); y += 7 + Math.floor((quote.notes.length || 0) / 80) * 5;
-  }
-  if (quote.terms) {
-    doc.text(doc.splitTextToSize('Conditions : ' + quote.terms, 180), 10, y); y += 7 + Math.floor((quote.terms.length || 0) / 80) * 5;
-  }
-
-  // --- Marge de sécurité avant signature ---
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const minSpaceForSignature = 36; // espace minimal pour la signature
-  if (y + minSpaceForSignature > pageHeight - 35) { // 35 = marge pied de page
-    doc.addPage();
-    y = 60; // recommence sous l'entête
-  }
-  // Section signature (alignée à droite)
-  y += 20;
-  doc.setDrawColor(150);
-  doc.line(120, y, 190, y);
-  y += 6;
-  doc.setFontSize(11);
-  doc.text("Signature et cachet de l'entreprise", 190, y, { align: "right" });
-  y += 8;
-  doc.setFontSize(10);
-  doc.text("Nom, fonction et signature", 190, y, { align: "right" });
-
-  // --- Ajout du footer et numéro de page sur chaque page (même celles ajoutées à la main) ---
-  const pageCount = (doc as any).internal.getNumberOfPages ? (doc as any).internal.getNumberOfPages() : 1;
-  const footer = company.footer || '';
-  const footerLines = doc.splitTextToSize(footer, 180);
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(9);
-    let footerY = doc.internal.pageSize.getHeight() - 18;
-    if (footerLines.length > 1) {
-      footerY -= (footerLines.length - 1) * 5;
-    }
-    doc.setTextColor(120, 120, 120);
-    doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
-    doc.setTextColor(0,0,0);
-    // Pagination centrée
-    doc.setFontSize(8);
-    doc.setTextColor(180,180,180);
-    doc.text(`Page ${i} / ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
-    doc.setTextColor(0,0,0);
-  }
-
-  doc.save(`Devis_${quote.quote_number}.pdf`);
-};
-
-  if (isLoading) {
+  if (stillLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader className="w-8 h-8 animate-spin" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
         </div>
       </Layout>
     );
@@ -155,11 +62,11 @@ const QuoteDetail = () => {
   if (!quote) {
     return (
       <Layout>
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium mb-2">Devis introuvable</h3>
-          <p className="text-muted-foreground mb-4">Aucun devis ne correspond à cet identifiant.</p>
-          <Button onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4 mr-2" /> Retour
+        <div className="text-center py-16">
+          <p className="text-gray-500 mb-4">Devis introuvable</p>
+          <p className="text-xs text-gray-400 mb-4">L'identifiant ne correspond à aucun devis de votre compte.</p>
+          <Button variant="outline" onClick={() => navigate("/quotes")}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Retour aux devis
           </Button>
         </div>
       </Layout>
@@ -168,45 +75,122 @@ const QuoteDetail = () => {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto py-8 animate-fade-in">
-        <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> Retour
-        </Button>
-        <Card className="shadow-card border-0">
-          <CardHeader>
-            <CardTitle className="text-2xl">Devis {quote.quote_number}</CardTitle>
-            <CardDescription>Client : {quote.clients?.name}</CardDescription>
-            <div className="text-muted-foreground text-sm mt-2">Émis le : {new Date(quote.issue_date).toLocaleDateString('fr-FR')}</div>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" onClick={() => handleDownloadPDF(quote)}>
-                Télécharger PDF
-              </Button>
-              <Button variant="default" onClick={() => navigate(`/create-quote?id=${quote.id}`)}>
-                Modifier
-              </Button>
+      <div className="max-w-3xl mx-auto space-y-5">
+
+        {/* Nav */}
+        <div className="flex items-center justify-between">
+          <button onClick={() => navigate("/quotes")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900">
+            <ArrowLeft className="w-4 h-4" /> Retour
+          </button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => navigate(`/create-quote?id=${quote.id}`)}>
+              <Pencil className="w-4 h-4" /> Modifier
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4" /> Télécharger PDF
+            </Button>
+          </div>
+        </div>
+
+        {/* Aperçu du devis — style fidèle au PDF */}
+        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-8 font-sans">
+
+          {/* En-tête */}
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex items-start gap-4">
+              {(() => {
+                let company = { name:'', subtitle:'', address:'', email:'', phone:'', logo:'' };
+                try { const s = localStorage.getItem('companyInfo'); if (s) company = { ...company, ...JSON.parse(s) }; } catch {}
+                return (
+                  <>
+                    {company.logo && (
+                      <img src={company.logo} alt="Logo" className="w-16 h-16 object-contain rounded" />
+                    )}
+                    <div>
+                      {company.name && <p className="font-bold text-teal-700 text-base">{company.name}</p>}
+                      {company.subtitle && <p className="text-xs text-gray-500">{company.subtitle}</p>}
+                      {company.address && <p className="text-xs text-gray-600 mt-1">{company.address}</p>}
+                      {company.email && <p className="text-xs text-gray-600">{company.email}</p>}
+                      {company.phone && <p className="text-xs text-gray-600">Tel : {company.phone}</p>}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col md:flex-row md:justify-between gap-2">
-              <div>
-                <div className="font-semibold">Montant total :</div>
-                <div className="text-xl font-bold">{quote.total.toLocaleString()} €</div>
-              </div>
-              <div>
-                <div className="font-semibold">Statut :</div>
-                <div className="capitalize">{quote.status}</div>
-              </div>
+            <div className="text-right">
+              <p className="text-sm font-semibold">Date : {new Date(quote.issue_date).toLocaleDateString('fr-FR')}</p>
+              <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[quote.status] ?? "bg-gray-100 text-gray-600"}`}>
+                {statusLabels[quote.status] ?? quote.status}
+              </span>
             </div>
-            {/* Ajoute ici plus de détails (lignes, notes, etc.) si disponibles dans le modèle */}
-            {quote.notes && (
-              <div>
-                <div className="font-semibold mb-1">Notes :</div>
-                <div className="bg-muted p-2 rounded text-sm">{quote.notes}</div>
+          </div>
+
+          <hr className="border-gray-200 mb-5" />
+
+          {/* Client */}
+          <div className="mb-5">
+            <p className="text-sm font-semibold text-gray-800">Nom client : {quote.clients?.name}</p>
+          </div>
+
+          {/* Titre devis */}
+          <h2 className="text-2xl font-bold text-blue-600 mb-5">DEVIS N°{quote.quote_number}</h2>
+
+          {/* Tableau */}
+          <table className="w-full text-sm border-collapse mb-4">
+            <thead>
+              <tr className="bg-blue-600 text-white">
+                <th className="px-3 py-2 text-left font-semibold">Référence</th>
+                <th className="px-3 py-2 text-left font-semibold">Description</th>
+                <th className="px-3 py-2 text-center font-semibold">Quantité</th>
+                <th className="px-3 py-2 text-right font-semibold">Prix unitaire</th>
+                <th className="px-3 py-2 text-right font-semibold">Prix total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(quote.items ?? []).map((item, i) => (
+                <tr key={item.id} className={i % 2 === 0 ? "bg-blue-50" : "bg-white"}>
+                  <td className="px-3 py-2 text-gray-700 border border-gray-100">{item.reference ?? ""}</td>
+                  <td className="px-3 py-2 text-gray-700 border border-gray-100">{item.description ?? item.name}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 border border-gray-100">{item.quantity}</td>
+                  <td className="px-3 py-2 text-right text-gray-700 border border-gray-100">{Number(item.unit_price).toLocaleString('fr-FR')}€</td>
+                  <td className="px-3 py-2 text-right font-medium text-gray-900 border border-gray-100">{Number(item.total).toLocaleString('fr-FR')} €</td>
+                </tr>
+              ))}
+              {(!quote.items || quote.items.length === 0) && (
+                <tr><td colSpan={5} className="px-3 py-4 text-center text-gray-400 italic">Aucune ligne</td></tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-gray-200">
+                <td colSpan={3} />
+                <td className="px-3 py-2 text-right font-bold text-gray-800">Total TTC</td>
+                <td className="px-3 py-2 text-right font-bold text-gray-900">{Number(quote.total).toLocaleString('fr-FR')}€</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* Notes */}
+          {(quote.notes || quote.terms) && (
+            <div className="text-xs text-gray-500 space-y-1 mt-4">
+              {quote.notes && <p><span className="font-semibold">Notes :</span> {quote.notes}</p>}
+              {quote.terms && <p><span className="font-semibold">Conditions :</span> {quote.terms}</p>}
+            </div>
+          )}
+
+          {/* Footer entreprise */}
+          {(() => {
+            let company = { name:'', address:'', email:'', siret:'', iban:'' };
+            try { const s = localStorage.getItem('companyInfo'); if (s) company = { ...company, ...JSON.parse(s) }; } catch {}
+            const parts = [company.name, company.address, company.email ? `E-mail : ${company.email}` : '', company.siret ? `SIRET : ${company.siret}` : '', company.iban ? `IBAN : ${company.iban}` : ''].filter(Boolean);
+            if (!parts.length) return null;
+            return (
+              <div className="mt-8 pt-4 border-t border-gray-200 text-center text-xs text-gray-500">
+                {parts.join('  |  ')}
               </div>
-            )}
-            {/* Ajoute d'autres champs comme conditions, lignes, etc. */}
-          </CardContent>
-        </Card>
+            );
+          })()}
+        </div>
+
       </div>
     </Layout>
   );

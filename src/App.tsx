@@ -19,7 +19,16 @@ import QuoteDetail from "./pages/QuoteDetail";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,   // données fraîches 5 minutes
+      gcTime: 10 * 60 * 1000,     // cache gardé 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

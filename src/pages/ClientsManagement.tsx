@@ -1,228 +1,102 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Users, Plus, Search, Mail, Phone, MapPin, Edit, Trash, Loader2 } from "lucide-react";
+import { Users, Plus, Search, Mail, Phone, MapPin, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient, Client } from "@/hooks/useClients";
 
+const defaultForm = { name:"", email:"", phone:"", address:"", city:"", postal_code:"", country:"France" };
+
 const ClientsManagement = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Client | null>(null);
+  const [form, setForm] = useState<Partial<Client>>(defaultForm);
 
   const { data: clients = [], isLoading } = useClients();
-  const createClientMutation = useCreateClient();
-  const updateClientMutation = useUpdateClient();
-  const deleteClientMutation = useDeleteClient();
+  const createMut = useCreateClient();
+  const updateMut = useUpdateClient();
+  const deleteMut = useDeleteClient();
 
-  const [formData, setFormData] = useState<Partial<Client>>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    postal_code: "",
-    country: "France"
-  });
+  const filtered = clients.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.email ?? "").toLowerCase().includes(search.toLowerCase())
+  );
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      postal_code: "",
-      country: "France"
-    });
-    setEditingClient(null);
-  };
+  const openNew = () => { setEditing(null); setForm(defaultForm); setOpen(true); };
+  const openEdit = (c: Client) => { setEditing(c); setForm({ name:c.name, email:c.email??'', phone:c.phone??'', address:c.address??'', city:c.city??'', postal_code:c.postal_code??'', country:c.country??'France' }); setOpen(true); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      if (editingClient) {
-        await updateClientMutation.mutateAsync({
-          id: editingClient.id,
-          ...formData
-        });
-      } else {
-        await createClientMutation.mutateAsync(formData as Omit<Client, 'id' | 'created_at' | 'updated_at'>);
-      }
-      
-      setIsDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error('Error saving client:', error);
+    if (editing) {
+      await updateMut.mutateAsync({ id: editing.id, ...form });
+    } else {
+      await createMut.mutateAsync(form as Omit<Client,'id'|'created_at'|'updated_at'>);
     }
+    setOpen(false);
   };
 
-  const handleEdit = (client: Client) => {
-    setEditingClient(client);
-    setFormData({
-      name: client.name,
-      email: client.email || "",
-      phone: client.phone || "",
-      address: client.address || "",
-      city: client.city || "",
-      postal_code: client.postal_code || "",
-      country: client.country || "France"
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteClientMutation.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting client:', error);
-    }
-  };
-
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  if (isLoading) return (
+    <Layout><div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div></Layout>
   );
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin" />
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="max-w-3xl mx-auto space-y-4">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2">
-              <Users className="w-7 h-7" />
-              Gestion des clients
-            </h1>
-            <p className="text-muted-foreground">Gérez votre base de données clients</p>
+            <h1 className="text-xl font-bold text-gray-900">Clients</h1>
+            <p className="text-sm text-gray-400 mt-0.5">{clients.length} client{clients.length !== 1 ? "s" : ""}</p>
           </div>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button 
-                className="gradient-primary border-0 shadow-lg hover:shadow-xl transition-all duration-200"
-                onClick={resetForm}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nouveau client
+              <Button onClick={openNew} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-9 gap-1.5 px-4 hidden sm:flex shadow-sm shadow-blue-200">
+                <Plus className="w-4 h-4" /> Nouveau
               </Button>
             </DialogTrigger>
-            
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>
-                  {editingClient ? "Modifier le client" : "Nouveau client"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingClient 
-                    ? "Modifiez les informations du client" 
-                    : "Ajoutez un nouveau client à votre base de données"
-                  }
-                </DialogDescription>
+                <DialogTitle>{editing ? "Modifier le client" : "Nouveau client"}</DialogTitle>
               </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="name">Nom de l'entreprise *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
-                    />
+              <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Nom *</Label>
+                  <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required className="h-9" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-600">Email</Label>
+                    <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="h-9" />
                   </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Téléphone</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="address">Adresse</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city">Ville</Label>
-                      <Input
-                        id="city"
-                        value={formData.city}
-                        onChange={(e) => setFormData({...formData, city: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="postal_code">Code postal</Label>
-                      <Input
-                        id="postal_code"
-                        value={formData.postal_code}
-                        onChange={(e) => setFormData({...formData, postal_code: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="country">Pays</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) => setFormData({...formData, country: e.target.value})}
-                    />
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-600">Téléphone</Label>
+                    <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="h-9" />
                   </div>
                 </div>
-                
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Annuler
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={createClientMutation.isPending || updateClientMutation.isPending}
-                  >
-                    {(createClientMutation.isPending || updateClientMutation.isPending) ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {editingClient ? "Modification..." : "Ajout..."}
-                      </>
-                    ) : (
-                      editingClient ? "Modifier" : "Ajouter"
-                    )}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Adresse</Label>
+                  <Input value={form.address} onChange={e => setForm({...form, address: e.target.value})} className="h-9" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-600">Ville</Label>
+                    <Input value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-600">Code postal</Label>
+                    <Input value={form.postal_code} onChange={e => setForm({...form, postal_code: e.target.value})} className="h-9" />
+                  </div>
+                </div>
+                <DialogFooter className="pt-2">
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl">Annuler</Button>
+                  <Button type="submit" disabled={createMut.isPending || updateMut.isPending} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+                    {(createMut.isPending || updateMut.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {editing ? "Modifier" : "Ajouter"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -230,128 +104,95 @@ const ClientsManagement = () => {
           </Dialog>
         </div>
 
-        {/* Search */}
-        <Card className="shadow-card border-0">
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Rechercher un client par nom ou email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Recherche */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10 bg-white border-gray-100 rounded-xl text-sm" />
+        </div>
 
-        {/* Clients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-          {filteredClients.map((client) => (
-            <Card key={client.id} className="shadow-card hover:shadow-card-hover transition-all duration-200 border-0">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{client.name}</CardTitle>
-                {client.country && (
-                  <CardDescription>{client.country}</CardDescription>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2 text-sm">
-                  {client.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <span>{client.email}</span>
-                    </div>
-                  )}
-                  {client.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <span>{client.phone}</span>
-                    </div>
-                  )}
-                  {client.address && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span>
-                        {client.address}
-                        {client.postal_code && `, ${client.postal_code}`}
-                        {client.city && ` ${client.city}`}
-                      </span>
-                    </div>
-                  )}
+        {/* Liste */}
+        {filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+              <Users className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-gray-500 font-medium">Aucun client</p>
+            <p className="text-gray-400 text-sm mt-1">Ajoutez votre premier client</p>
+            <Button onClick={openNew} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+              <Plus className="w-4 h-4 mr-2" /> Ajouter un client
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map(client => (
+              <div key={client.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3 hover:shadow-md hover:border-blue-100 transition-all">
+                {/* Avatar initiale */}
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <span className="text-blue-600 font-bold text-sm">{client.name.charAt(0).toUpperCase()}</span>
                 </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleEdit(client)}
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Modifier
-                  </Button>
+
+                {/* Infos */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{client.name}</p>
+                  <div className="mt-1 space-y-0.5">
+                    {client.email && (
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs text-gray-500 truncate">{client.email}</span>
+                      </div>
+                    )}
+                    {client.phone && (
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs text-gray-500">{client.phone}</span>
+                      </div>
+                    )}
+                    {(client.address || client.city) && (
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs text-gray-500 truncate">
+                          {[client.address, client.postal_code, client.city].filter(Boolean).join(", ")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-1 flex-shrink-0">
+                  <button onClick={() => openEdit(client)} className="w-8 h-8 rounded-lg bg-gray-50 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition-colors">
+                    <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </Button>
+                      <button className="w-8 h-8 rounded-lg bg-gray-50 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                        <Trash2 className="w-3.5 h-3.5 text-gray-400" />
+                      </button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Supprimer le client</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Êtes-vous sûr de vouloir supprimer {client.name} ? Cette action est irréversible.
-                        </AlertDialogDescription>
+                        <AlertDialogTitle>Supprimer {client.name} ?</AlertDialogTitle>
+                        <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(client.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          disabled={deleteClientMutation.isPending}
-                        >
-                          {deleteClientMutation.isPending ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Suppression...
-                            </>
-                          ) : (
-                            "Supprimer"
-                          )}
+                        <AlertDialogCancel className="rounded-xl">Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMut.mutateAsync(client.id)} className="bg-red-500 hover:bg-red-600 rounded-xl">
+                          Supprimer
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {filteredClients.length === 0 && !isLoading && (
-          <Card className="shadow-card border-0">
-            <CardContent className="text-center py-12">
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Aucun client trouvé</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm 
-                  ? "Aucun client ne correspond à votre recherche." 
-                  : "Commencez par ajouter votre premier client."
-                }
-              </p>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter un client
-              </Button>
-            </CardContent>
-          </Card>
+              </div>
+            ))}
+          </div>
         )}
       </div>
+
+      {/* FAB mobile */}
+      <button onClick={openNew} className="sm:hidden fixed bottom-20 right-4 w-14 h-14 bg-blue-600 rounded-2xl shadow-lg shadow-blue-300 flex items-center justify-center z-30">
+        <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
+      </button>
     </Layout>
   );
 };

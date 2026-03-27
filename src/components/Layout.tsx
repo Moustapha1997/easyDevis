@@ -1,63 +1,53 @@
-
 import { ReactNode } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BottomNav } from "@/components/BottomNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { UserMenu } from "@/components/UserMenu";
 
 interface LayoutProps {
   children: ReactNode;
+  title?: string;
 }
 
-function LogoutButton() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  if (!user) return null;
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/login");
-  };
-
+export function Layout({ children, title }: LayoutProps) {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label="Se déconnecter"
-      onClick={handleLogout}
-      className="ml-2"
-      title="Se déconnecter"
-    >
-      <LogOut className="w-5 h-5" />
-    </Button>
-  );
-}
+    <div className="min-h-screen flex w-full bg-gray-50">
+      {/* Sidebar desktop */}
+      <div className="hidden md:flex">
+        <AppSidebar />
+      </div>
 
-export function Layout({ children }: LayoutProps) {
-  const isMobile = useIsMobile();
-
-  return (
-    <div className="min-h-screen flex w-full bg-muted/30">
-      <AppSidebar />
-      <main className="flex-1 flex flex-col">
-        <header className="h-16 border-b bg-background flex items-center px-4 lg:px-6">
-          <SidebarTrigger className="mr-4" />
-          <div className="flex-1 flex items-center">
-            <img src="/samadevis-favicon.png" alt="Logo Samadevis" className="w-8 h-8 mr-2 rounded" />
-            <h1 className="text-xl font-semibold">EasyDevis</h1>
+      <main className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
+        {/* Header */}
+        <header className="h-14 border-b border-gray-100 bg-white flex items-center px-4 gap-3 sticky top-0 z-30">
+          {/* Trigger sidebar desktop */}
+          <div className="hidden md:block">
+            <SidebarTrigger className="text-gray-400 hover:text-gray-700" />
           </div>
-          <div className="flex items-center">
-            <LogoutButton />
+          {/* Logo mobile */}
+          <div className="flex items-center gap-2 md:hidden flex-1">
+            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+              <span className="text-white font-bold text-xs">E</span>
+            </div>
+            <span className="font-semibold text-gray-900 text-sm">EasyDevis</span>
           </div>
+          {/* UserMenu mobile */}
+          <div className="md:hidden">
+            <UserMenu />
+          </div>
+          {title && (
+            <span className="hidden md:block text-sm font-medium text-gray-500">{title}</span>
+          )}
         </header>
-        <div className="flex-1 p-4 lg:p-6">
+
+        {/* Content */}
+        <div className="flex-1 p-4 md:p-6 overflow-auto">
           {children}
         </div>
       </main>
+
+      {/* Bottom nav mobile */}
+      <BottomNav />
     </div>
   );
 }

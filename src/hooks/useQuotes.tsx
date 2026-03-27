@@ -4,6 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
+export interface QuoteItem {
+  id: string;
+  quote_id: string;
+  reference: string | null;
+  name: string;
+  description: string | null;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  created_at: string;
+}
+
 export interface Quote {
   id: string;
   quote_number: string;
@@ -23,6 +35,7 @@ export interface Quote {
     name: string;
     email: string | null;
   };
+  items?: QuoteItem[];
 }
 
 export const useQuotes = () => {
@@ -32,39 +45,19 @@ export const useQuotes = () => {
     queryKey: ['quotes', user?.id],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
-      
-      // Fetch quotes with clients
-      const { data: quotes, error } = await supabase
+
+      const { data, error } = await supabase
         .from('quotes')
         .select(`
           *,
-          clients (
-            name,
-            email
-          )
+          clients (name, email),
+          items:quote_items (*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      if (!quotes) return [];
 
-      // Fetch all quote_items for these quotes
-      const quoteIds = quotes.map((q: any) => q.id);
-      let items: any[] = [];
-      if (quoteIds.length > 0) {
-        const { data: itemsData, error: itemsError } = await supabase
-          .from('quote_items')
-          .select('*')
-          .in('quote_id', quoteIds);
-        if (itemsError) throw itemsError;
-        items = itemsData || [];
-      }
-      // Attach items to each quote
-      const quotesWithItems = quotes.map((q: any) => ({
-        ...q,
-        items: items.filter((item: any) => item.quote_id === q.id)
-      }));
-      return quotesWithItems as Quote[];
+      if (error) throw error;
+      return (data ?? []) as Quote[];
     },
     enabled: !!user,
   });
